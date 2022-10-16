@@ -52,15 +52,16 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedResponseString = """{"id":"config-schema","action":"uploadSchema","status":"success"}"""
     val expectedContentType    = "application/json"
 
-    val test = for {
-      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      service <- testRoutes
-      request = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
-      response    <- service.orNotFound.run(request)
-      body        <- response.as[SuccessResponse]
-      bodyString  <- response.as[String]
-      contentType <- response.headers.get(CIString("content-type")).getOrThrow
-    } yield (response.status, body, bodyString, contentType.head.value)
+    val test = testResources.use { service =>
+      for {
+        uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+        request = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
+        response    <- service.orNotFound.run(request)
+        body        <- response.as[SuccessResponse]
+        bodyString  <- response.as[String]
+        contentType <- response.headers.get(CIString("content-type")).getOrThrow
+      } yield (response.status, body, bodyString, contentType.head.value)
+    }
     test.assertEquals((expectedStatusCode, expectedResponse, expectedResponseString, expectedContentType))
   }
 
@@ -70,14 +71,15 @@ class SchemaApiTest extends CatsEffectSuite {
       """{"id":"config-schema","action":"uploadSchema","status":"error","message":"ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
     val expectedContentType = "application/json"
 
-    val test = for {
-      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      service <- testRoutes
-      request = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
-      response    <- service.orNotFound.run(request)
-      body        <- response.as[String]
-      contentType <- response.headers.get(CIString("content-type")).getOrThrow
-    } yield (response.status, body, contentType.head.value)
+    val test = testResources.use { service =>
+      for {
+        uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+        request = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
+        response    <- service.orNotFound.run(request)
+        body        <- response.as[String]
+        contentType <- response.headers.get(CIString("content-type")).getOrThrow
+      } yield (response.status, body, contentType.head.value)
+    }
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
   }
 
@@ -86,15 +88,16 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedResponse    = ErrorResponse(Action.downloadSchema, "schema schemaId not found")
     val expectedContentType = "application/json"
 
-    val response = for {
-      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      service <- testRoutes
-      request = Request[IO](
-        method = Method.GET,
-        uri = uri
-      )
-      response <- service.orNotFound.run(request)
-    } yield response
+    val response = testResources.use { service =>
+      for {
+        uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+        request = Request[IO](
+          method = Method.GET,
+          uri = uri
+        )
+        response <- service.orNotFound.run(request)
+      } yield response
+    }
 
     val test = for {
       result      <- response
@@ -105,9 +108,9 @@ class SchemaApiTest extends CatsEffectSuite {
 
   }
 
-  def testRoutes: IO[HttpRoutes[IO]] =
+  val testResources: Resource[IO, HttpRoutes[IO]] =
     for {
-      ref <- Ref[IO].of(Map.empty[SchemaId, Json])
+      ref <- Resource.eval(Ref[IO].of(Map.empty[SchemaId, Json]))
       repo                    = new FakeSchemaRepo(ref)
       schemaService           = new SchemaService[IO](repo)
       service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
