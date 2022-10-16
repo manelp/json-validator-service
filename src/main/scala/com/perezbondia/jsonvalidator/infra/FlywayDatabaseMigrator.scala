@@ -19,11 +19,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.db
+package com.perezbondia.jsonvalidator.infra
 
 import cats.effect.IO
+
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
+
 import com.perezbondia.jsonvalidator.types._
 
 final class FlywayDatabaseMigrator {

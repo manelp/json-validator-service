@@ -21,12 +21,14 @@
 
 package com.perezbondia.jsonvalidator.core
 
-import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
-import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
-import io.circe._
-import io.circe.parser._
 import cats.effect.Sync
 import cats.implicits._
+
+import io.circe._
+import io.circe.parser.parse
+
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
 final class SchemaService[F[_]: Sync]() {
   def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[InvalidJson, Unit]] =

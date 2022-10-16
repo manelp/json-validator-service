@@ -23,6 +23,7 @@ package com.perezbondia.jsonvalidator.config
 
 import com.comcast.ip4s._
 import pureconfig._
+
 import com.perezbondia.jsonvalidator.types._
 
 /** The service configuration.

@@ -21,21 +21,23 @@
 
 package com.perezbondia.jsonvalidator.api
 
-import org.http4s.HttpRoutes
-import sttp.tapir.server.http4s.Http4sServerInterpreter
 import cats.effect.kernel.Async
-import com.perezbondia.jsonvalidator.core.SchemaService
-import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
-import com.perezbondia.jsonvalidator.api.model._
-import sttp.model.StatusCode
 import cats.effect.kernel.Sync
-import sttp.model._
-import sttp.tapir._
 import cats.implicits._
+
+import io.circe.Json
+import org.http4s.HttpRoutes
+import sttp.model.StatusCode
+import sttp.model._
 import sttp.tapir.Codec.PlainCodec
+import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe._
-import io.circe.Json
+import sttp.tapir.server.http4s.Http4sServerInterpreter
+
+import com.perezbondia.jsonvalidator.api.model._
+import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
 final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
   private val postSchema: HttpRoutes[F] =

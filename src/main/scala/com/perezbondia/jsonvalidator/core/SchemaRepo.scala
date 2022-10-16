@@ -19,38 +19,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.config
+package com.perezbondia.jsonvalidator.core
 
-import pureconfig._
+import io.circe.Json
 
-import com.perezbondia.jsonvalidator.types._
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
-/** The configuration for a database connection.
-  *
-  * @param driver
-  *   The class name of the JDBC driver.
-  * @param url
-  *   A JDBC URL.
-  * @param user
-  *   The username for the connection.
-  * @param pass
-  *   The password for the connection.
-  */
-final case class DatabaseConfig(
-    driver: JdbcDriverName,
-    url: JdbcUrl,
-    user: JdbcUsername,
-    pass: JdbcPassword
-)
-
-object DatabaseConfig {
-  // The default configuration key to lookup the database configuration.
-  final val CONFIG_KEY: ConfigKey = ConfigKey("database")
-
-  given ConfigReader[JdbcDriverName] = ConfigReader.fromStringOpt(JdbcDriverName.from)
-  given ConfigReader[JdbcPassword]   = ConfigReader.fromStringOpt(JdbcPassword.from)
-  given ConfigReader[JdbcUrl]        = ConfigReader.fromStringOpt(JdbcUrl.from)
-  given ConfigReader[JdbcUsername]   = ConfigReader.fromStringOpt(JdbcUsername.from)
-  given ConfigReader[DatabaseConfig] = ConfigReader.forProduct4("driver", "url", "user", "pass")(DatabaseConfig.apply)
-
+trait SchemaRepo[F[_]] {
+  def storeSchema(schemaId: SchemaId, jsonSchema: Json): F[Unit]
+  def retrieveSchema(schemaId: SchemaId): F[Option[Json]]
 }

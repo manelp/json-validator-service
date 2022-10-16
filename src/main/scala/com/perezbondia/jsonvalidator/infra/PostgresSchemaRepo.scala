@@ -19,38 +19,32 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.config
+package com.perezbondia.jsonvalidator.infra
 
-import pureconfig._
+import cats.effect.kernel.MonadCancelThrow
+import cats.implicits._
 
-import com.perezbondia.jsonvalidator.types._
+import doobie.implicits._
+import doobie.postgres.circe.json.implicits._
+import doobie.util.meta.Meta
+import doobie.util.transactor.Transactor
+import io.circe.Json
 
-/** The configuration for a database connection.
-  *
-  * @param driver
-  *   The class name of the JDBC driver.
-  * @param url
-  *   A JDBC URL.
-  * @param user
-  *   The username for the connection.
-  * @param pass
-  *   The password for the connection.
-  */
-final case class DatabaseConfig(
-    driver: JdbcDriverName,
-    url: JdbcUrl,
-    user: JdbcUsername,
-    pass: JdbcPassword
-)
+import com.perezbondia.jsonvalidator.core.SchemaRepo
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
-object DatabaseConfig {
-  // The default configuration key to lookup the database configuration.
-  final val CONFIG_KEY: ConfigKey = ConfigKey("database")
+class PostgresSchemaRepo[F[_]: MonadCancelThrow](transactor: Transactor[F]) extends SchemaRepo[F] {
 
-  given ConfigReader[JdbcDriverName] = ConfigReader.fromStringOpt(JdbcDriverName.from)
-  given ConfigReader[JdbcPassword]   = ConfigReader.fromStringOpt(JdbcPassword.from)
-  given ConfigReader[JdbcUrl]        = ConfigReader.fromStringOpt(JdbcUrl.from)
-  given ConfigReader[JdbcUsername]   = ConfigReader.fromStringOpt(JdbcUsername.from)
-  given ConfigReader[DatabaseConfig] = ConfigReader.forProduct4("driver", "url", "user", "pass")(DatabaseConfig.apply)
+  given Meta[SchemaId] = Meta[String].timap(SchemaId.apply)(_.toString)
+
+  override def storeSchema(schemaId: SchemaId, jsonSchema: Json): F[Unit] = {
+    val insertQuery = sql"""insert into json_schemas(schema_id,json_schema) values ($schemaId, $jsonSchema)"""
+    insertQuery.update.run.transact(transactor).void
+  }
+
+  override def retrieveSchema(schemaId: SchemaId): F[Option[Json]] = {
+    val selectQuery = sql"""select json_schema from json_schemas where schema_id = $schemaId"""
+    selectQuery.query[Json].option.transact(transactor)
+  }
 
 }

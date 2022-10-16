@@ -21,9 +21,9 @@
 
 package com.perezbondia.jsonvalidator
 
-import sttp.tapir.Schema
-
 import scala.util.matching.Regex
+
+import sttp.tapir.Schema
 
 object types {
 

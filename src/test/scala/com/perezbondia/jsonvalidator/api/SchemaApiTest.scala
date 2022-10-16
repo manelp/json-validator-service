@@ -21,21 +21,23 @@
 
 package com.perezbondia.jsonvalidator.api
 
-import cats.implicits._
 import cats.effect._
-import com.perezbondia.jsonvalidator.types._
+import cats.implicits._
+
+import io.circe._
+import io.circe.literal._
 import munit._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.server.Router
+import org.typelevel.ci.CIString
+import org.typelevel.ci.CIString.apply
+
+import com.perezbondia.jsonvalidator.api.model._
 import com.perezbondia.jsonvalidator.core.SchemaService
 import com.perezbondia.jsonvalidator.test.TestHelpers._
-import com.perezbondia.jsonvalidator.api.model._
-import org.typelevel.ci.CIString.apply
-import org.typelevel.ci.CIString
-import io.circe._
-import io.circe.literal._
+import com.perezbondia.jsonvalidator.types._
 
 class SchemaApiTest extends CatsEffectSuite {
 

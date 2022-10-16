@@ -26,7 +26,8 @@ inThisBuild(
     scalafmtOnCompile := false,
     Compile / console / scalacOptions --= Seq("-Xfatal-warnings"),
     Test / console / scalacOptions --= Seq("-Xfatal-warnings"),
-    Test / fork := true
+    Test / fork := true,
+    scalafixDependencies += "com.nequissimus" %% "sort-imports" % "0.3.1"
   )
 )
 
@@ -61,6 +62,7 @@ lazy val jsonvalidatorservice =
         library.doobieCore,
         library.doobieHikari,
         library.doobiePostgres,
+        library.doobiePostgresCirce,
         library.flywayCore,
         library.http4sCirce,
         library.http4sDsl,
@@ -111,36 +113,37 @@ lazy val library =
       val tapir               = "1.1.2"
       val jsonSchemaValidator = "2.2.14"
     }
-    val catsCore             = "org.typelevel"                 %% "cats-core"            % Version.cats
-    val catsEffect           = "org.typelevel"                 %% "cats-effect"          % Version.catsEffect
-    val circeCore            = "io.circe"                      %% "circe-core"           % Version.circe
-    val circeGeneric         = "io.circe"                      %% "circe-generic"        % Version.circe
-    val circeLiteral         = "io.circe"                      %% "circe-literal"        % Version.circe
-    val circeParser          = "io.circe"                      %% "circe-parser"         % Version.circe
-    val doobieCore           = "org.tpolecat"                  %% "doobie-core"          % Version.doobie
-    val doobieHikari         = "org.tpolecat"                  %% "doobie-hikari"        % Version.doobie
-    val doobiePostgres       = "org.tpolecat"                  %% "doobie-postgres"      % Version.doobie
-    val doobieScalaTest      = "org.tpolecat"                  %% "doobie-scalatest"     % Version.doobie
-    val flywayCore           = "org.flywaydb"                  %  "flyway-core"          % Version.flyway
-    val http4sCirce          = "org.http4s"                    %% "http4s-circe"         % Version.http4s
-    val http4sDsl            = "org.http4s"                    %% "http4s-dsl"           % Version.http4s
-    val http4sEmberServer    = "org.http4s"                    %% "http4s-ember-server"  % Version.http4s
-    val http4sEmberClient    = "org.http4s"                    %% "http4s-ember-client"  % Version.http4s
-    val logback              = "ch.qos.logback"                %  "logback-classic"      % Version.logback
-    val munit                = "org.scalameta"                 %% "munit"                % Version.munit
-    val munitCatsEffect      = "org.typelevel"                 %% "munit-cats-effect-3"  % Version.munitCatsEffect
-    val munitScalaCheck      = "org.scalameta"                 %% "munit-scalacheck"     % Version.munit
-    val postgresql           = "org.postgresql"                %  "postgresql"           % Version.postgresql
-    val pureConfig           = "com.github.pureconfig"         %% "pureconfig-core"      % Version.pureConfig
-    val scalaCheck           = "org.scalacheck"                %% "scalacheck"           % Version.scalaCheck
-    val sttpApiSpecCirceYaml = "com.softwaremill.sttp.apispec" %% "openapi-circe-yaml"   % Version.sttpApiSpec
-    val tapirCats            = "com.softwaremill.sttp.tapir"   %% "tapir-cats"           % Version.tapir
-    val tapirCirce           = "com.softwaremill.sttp.tapir"   %% "tapir-json-circe"     % Version.tapir
-    val tapirCore            = "com.softwaremill.sttp.tapir"   %% "tapir-core"           % Version.tapir
-    val tapirHttp4s          = "com.softwaremill.sttp.tapir"   %% "tapir-http4s-server"  % Version.tapir
-    val tapirOpenApiDocs     = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"   % Version.tapir
-    val tapirSwaggerUi       = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui"     % Version.tapir
-    val jsonSchemaValidator  = "com.github.java-json-tools"    % "json-schema-validator" % Version.jsonSchemaValidator
+    val catsCore             = "org.typelevel"                 %% "cats-core"             % Version.cats
+    val catsEffect           = "org.typelevel"                 %% "cats-effect"           % Version.catsEffect
+    val circeCore            = "io.circe"                      %% "circe-core"            % Version.circe
+    val circeGeneric         = "io.circe"                      %% "circe-generic"         % Version.circe
+    val circeLiteral         = "io.circe"                      %% "circe-literal"         % Version.circe
+    val circeParser          = "io.circe"                      %% "circe-parser"          % Version.circe
+    val doobieCore           = "org.tpolecat"                  %% "doobie-core"           % Version.doobie
+    val doobieHikari         = "org.tpolecat"                  %% "doobie-hikari"         % Version.doobie
+    val doobiePostgres       = "org.tpolecat"                  %% "doobie-postgres"       % Version.doobie
+    val doobiePostgresCirce  = "org.tpolecat"                  %% "doobie-postgres-circe" % Version.doobie
+    val doobieScalaTest      = "org.tpolecat"                  %% "doobie-scalatest"      % Version.doobie
+    val flywayCore           = "org.flywaydb"                  %  "flyway-core"           % Version.flyway
+    val http4sCirce          = "org.http4s"                    %% "http4s-circe"          % Version.http4s
+    val http4sDsl            = "org.http4s"                    %% "http4s-dsl"            % Version.http4s
+    val http4sEmberServer    = "org.http4s"                    %% "http4s-ember-server"   % Version.http4s
+    val http4sEmberClient    = "org.http4s"                    %% "http4s-ember-client"   % Version.http4s
+    val logback              = "ch.qos.logback"                %  "logback-classic"       % Version.logback
+    val munit                = "org.scalameta"                 %% "munit"                 % Version.munit
+    val munitCatsEffect      = "org.typelevel"                 %% "munit-cats-effect-3"   % Version.munitCatsEffect
+    val munitScalaCheck      = "org.scalameta"                 %% "munit-scalacheck"      % Version.munit
+    val postgresql           = "org.postgresql"                %  "postgresql"            % Version.postgresql
+    val pureConfig           = "com.github.pureconfig"         %% "pureconfig-core"       % Version.pureConfig
+    val scalaCheck           = "org.scalacheck"                %% "scalacheck"            % Version.scalaCheck
+    val sttpApiSpecCirceYaml = "com.softwaremill.sttp.apispec" %% "openapi-circe-yaml"    % Version.sttpApiSpec
+    val tapirCats            = "com.softwaremill.sttp.tapir"   %% "tapir-cats"            % Version.tapir
+    val tapirCirce           = "com.softwaremill.sttp.tapir"   %% "tapir-json-circe"      % Version.tapir
+    val tapirCore            = "com.softwaremill.sttp.tapir"   %% "tapir-core"            % Version.tapir
+    val tapirHttp4s          = "com.softwaremill.sttp.tapir"   %% "tapir-http4s-server"   % Version.tapir
+    val tapirOpenApiDocs     = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"    % Version.tapir
+    val tapirSwaggerUi       = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui"      % Version.tapir
+    val jsonSchemaValidator  = "com.github.java-json-tools"    % "json-schema-validator"  % Version.jsonSchemaValidator
   }
 
 // *****************************************************************************

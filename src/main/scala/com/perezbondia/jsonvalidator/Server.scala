@@ -23,10 +23,8 @@ package com.perezbondia.jsonvalidator
 
 import cats.effect._
 import cats.syntax.all._
+
 import com.typesafe.config._
-import com.perezbondia.jsonvalidator.api._
-import com.perezbondia.jsonvalidator.config._
-import com.perezbondia.jsonvalidator.db.FlywayDatabaseMigrator
 import org.http4s.ember.server._
 import org.http4s.implicits._
 import org.http4s.server.Router
@@ -36,8 +34,12 @@ import sttp.apispec.openapi.circe.yaml._
 import sttp.tapir.docs.openapi._
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.SwaggerUI
-import com.perezbondia.jsonvalidator.core.SchemaService
+
 import com.perezbondia.jsonvalidator.api.SchemaApi
+import com.perezbondia.jsonvalidator.api._
+import com.perezbondia.jsonvalidator.config._
+import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.infra.FlywayDatabaseMigrator
 
 object Server extends IOApp {
   val log = LoggerFactory.getLogger(Server.getClass())
@@ -47,13 +49,13 @@ object Server extends IOApp {
 
     for {
       config <- IO(ConfigFactory.load(getClass().getClassLoader()))
-      // dbConfig <- IO(
-      //   ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
-      // )
+      dbConfig <- IO(
+        ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
+      )
       serviceConfig <- IO(
         ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig]
       )
-      // _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
+      _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
       schemaService = new SchemaService[IO]()
       schemaApi     = new SchemaApi[IO](schemaService)
       docs          = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")

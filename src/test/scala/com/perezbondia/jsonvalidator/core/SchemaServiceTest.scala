@@ -19,38 +19,41 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.config
+package com.perezbondia.jsonvalidator.core
 
-import pureconfig._
+import cats.effect.IO
+import cats.effect.Resource
 
-import com.perezbondia.jsonvalidator.types._
+import io.circe._
+import io.circe.literal._
+import munit.CatsEffectSuite
 
-/** The configuration for a database connection.
-  *
-  * @param driver
-  *   The class name of the JDBC driver.
-  * @param url
-  *   A JDBC URL.
-  * @param user
-  *   The username for the connection.
-  * @param pass
-  *   The password for the connection.
-  */
-final case class DatabaseConfig(
-    driver: JdbcDriverName,
-    url: JdbcUrl,
-    user: JdbcUsername,
-    pass: JdbcPassword
-)
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
-object DatabaseConfig {
-  // The default configuration key to lookup the database configuration.
-  final val CONFIG_KEY: ConfigKey = ConfigKey("database")
+class SchemaServiceTest extends CatsEffectSuite {
 
-  given ConfigReader[JdbcDriverName] = ConfigReader.fromStringOpt(JdbcDriverName.from)
-  given ConfigReader[JdbcPassword]   = ConfigReader.fromStringOpt(JdbcPassword.from)
-  given ConfigReader[JdbcUrl]        = ConfigReader.fromStringOpt(JdbcUrl.from)
-  given ConfigReader[JdbcUsername]   = ConfigReader.fromStringOpt(JdbcUsername.from)
-  given ConfigReader[DatabaseConfig] = ConfigReader.forProduct4("driver", "url", "user", "pass")(DatabaseConfig.apply)
+  val resourcesFixture = ResourceSuiteLocalFixture(
+    "testResources",
+    Resource.eval(IO(new SchemaService[IO]()))
+  )
 
+  override def munitFixtures = List(resourcesFixture)
+
+  test("registerSchema valid json") {
+    val test = for {
+      service <- IO(resourcesFixture())
+      res     <- service.registerSchema(SchemaId("schemaId"), "{}")
+    } yield res
+
+    test.assertEquals(Right(()))
+  }
+  test("registerSchema invalid json") {
+    val test = for {
+      service <- IO(resourcesFixture())
+      res     <- service.registerSchema(SchemaId("schemaId"), "{invalid}")
+    } yield res
+
+    test.assertEquals(Left(InvalidJson("ParsingFailure: expected \" got 'invali...' (line 1, column 2)")))
+  }
 }
