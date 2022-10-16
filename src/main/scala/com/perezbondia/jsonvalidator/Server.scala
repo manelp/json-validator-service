@@ -47,13 +47,13 @@ object Server extends IOApp {
 
     for {
       config <- IO(ConfigFactory.load(getClass().getClassLoader()))
-      dbConfig <- IO(
-        ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
-      )
+      // dbConfig <- IO(
+      //   ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
+      // )
       serviceConfig <- IO(
         ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig]
       )
-      _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
+      // _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
       schemaService = new SchemaService[IO]()
       schemaApi = new SchemaApi[IO](schemaService)
       docs             = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")

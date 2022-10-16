@@ -43,6 +43,11 @@ object model {
 
   final case class ErrorResponse(action: Action, id: ResourceId, status: ResponseStatus, message: String)
 
+  // TODO: Use a generic solution for scala3 enum
+  given Codec[Action] = Codec.from(Decoder.decodeString.map(Action.valueOf), (a: Action) => Encoder.encodeString(a.toString))
+  given Codec[ResourceId] = Codec.from(Decoder.decodeString.map(ResourceId.valueOf), (a: ResourceId) => Encoder.encodeString(a.toString))
+  given Codec[ResponseStatus] = Codec.from(Decoder.decodeString.map(ResponseStatus.valueOf), (a: ResponseStatus) => Encoder.encodeString(a.toString))
+
   given Codec[ErrorResponse] = deriveCodec[ErrorResponse]
 
 }
