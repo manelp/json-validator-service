@@ -52,21 +52,22 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
 
 object SchemaApi {
 
-  val postSchemaEndpoint: Endpoint[Unit, (String, String), ErrorResponse, Unit, Any] =
-    endpoint.post
+  private val baseEndpoint: Endpoint[Unit, String, ErrorResponse, Unit, Any] = endpoint
       .in("schema")
       .in(path[String]("schemaId"))
-      .in(stringBody)
       .errorOut(jsonBody[ErrorResponse])
+      .errorOut(header(Header.contentType(MediaType.ApplicationJson)))
+      .out(header(Header.contentType(MediaType.ApplicationJson)))
+
+  val postSchemaEndpoint: Endpoint[Unit, (String, String), ErrorResponse, Unit, Any] =
+    baseEndpoint
+      .in(stringBody)
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
 
   val getSchemaEndpoint: Endpoint[Unit, String, ErrorResponse, String, Any] =
-    endpoint.get
-      .in("schema")
-      .in(path[String]("schemaId"))
-      .errorOut(jsonBody[ErrorResponse])
+    baseEndpoint
       .out(stringJsonBody)
       .description(
         "Registers a new JSON schema with the given :schemaId"

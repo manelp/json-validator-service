@@ -32,6 +32,8 @@ import org.http4s.server.Router
 import com.perezbondia.jsonvalidator.core.SchemaService
 import com.perezbondia.jsonvalidator.test.TestHelpers._
 import com.perezbondia.jsonvalidator.api.model._
+import org.typelevel.ci.CIString.apply
+import org.typelevel.ci.CIString
 
 class SchemaApiTest extends CatsEffectSuite {
 
@@ -40,6 +42,7 @@ class SchemaApiTest extends CatsEffectSuite {
   test("POST /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+    val expectedContentType = "application/json"
 
     val response = for {
       uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
@@ -55,8 +58,9 @@ class SchemaApiTest extends CatsEffectSuite {
     val test = for {
       result <- response
       body   <- result.as[ErrorResponse]
-    } yield (result.status, body)
-    test.assertEquals((expectedStatusCode, expectedResponse))
+      contentType <- result.headers.get(CIString("content-type")).getOrThrow
+    } yield (result.status, body, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
 
@@ -64,6 +68,7 @@ class SchemaApiTest extends CatsEffectSuite {
   test("GET /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+    val expectedContentType = "application/json"
 
     val response = for {
       uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
@@ -79,8 +84,9 @@ class SchemaApiTest extends CatsEffectSuite {
     val test = for {
       result <- response
       body   <- result.as[ErrorResponse]
-    } yield (result.status, body)
-    test.assertEquals((expectedStatusCode, expectedResponse))
+      contentType <- result.headers.get(CIString("content-type")).getOrThrow
+    } yield (result.status, body, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
 }
