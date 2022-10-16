@@ -49,7 +49,7 @@ class SchemaServiceTest extends CatsEffectSuite {
 
   test("register existing schema returns SchemaIdInUse") {
     val schemaId = SchemaId("schemaId")
-    val test     = testResource(Map(schemaId -> Json.obj())).use(service => service.registerSchema(schemaId, Json.obj()))
+    val test = testResource(Map(schemaId -> Json.obj())).use(service => service.registerSchema(schemaId, Json.obj()))
 
     test.assertEquals(Left(SchemaIdInUse(schemaId)))
   }

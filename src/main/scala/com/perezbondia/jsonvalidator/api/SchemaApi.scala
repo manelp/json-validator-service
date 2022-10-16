@@ -36,8 +36,8 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 
 import com.perezbondia.jsonvalidator.api.model._
-import com.perezbondia.jsonvalidator.core.SchemaService
 import com.perezbondia.jsonvalidator.core.JsonParser
+import com.perezbondia.jsonvalidator.core.SchemaService
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
 final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {

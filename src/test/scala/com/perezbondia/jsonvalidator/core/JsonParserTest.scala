@@ -21,20 +21,22 @@
 
 package com.perezbondia.jsonvalidator.core
 
-import munit.CatsEffectSuite
 import cats.effect.IO
+
 import io.circe.Json
+import munit.CatsEffectSuite
+
 import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 
 class JsonParserTest extends CatsEffectSuite {
 
-  test("parses valid json"){
+  test("parses valid json") {
     val test = JsonParser.validateJsonSchema[IO]("{}")
     test.assertEquals(Right(Json.obj()))
   }
-  
-  test("returns InvalidJson if json invalid"){
-    val test =  JsonParser.validateJsonSchema[IO]("{invalid})")
+
+  test("returns InvalidJson if json invalid") {
+    val test = JsonParser.validateJsonSchema[IO]("{invalid})")
 
     test.assertEquals(Left(InvalidJson("Invalid JSON. ParsingFailure: expected \" got 'invali...' (line 1, column 2)")))
   }

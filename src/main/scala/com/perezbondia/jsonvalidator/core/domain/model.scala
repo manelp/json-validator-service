@@ -23,6 +23,8 @@ package com.perezbondia.jsonvalidator.core.domain
 
 import scala.util.control.NoStackTrace
 
+import io.circe.Json
+
 object model {
 
   opaque type SchemaId = String
@@ -44,6 +46,9 @@ object model {
   trait ValidateError extends Exception {
     val message: String
   }
-  final case class ValidateInvalidJson(message: String) extends ValidateError with NoStackTrace
+  final case class FailedValidation(message: String) extends ValidateError with NoStackTrace
+
+  final case class JsonSchema(value: Json)   extends AnyVal
+  final case class JsonDocument(value: Json) extends AnyVal
 
 }

@@ -22,12 +22,13 @@
 package com.perezbondia.jsonvalidator.core
 
 import cats.MonadThrow
-
-import io.circe.parser.parse
-import io.circe.Json
-import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 import cats.effect.kernel.Sync
 import cats.implicits._
+
+import io.circe.Json
+import io.circe.parser.parse
+
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 
 object JsonParser {
   def validateJsonSchema[F[_]: Sync](inputSchema: String): F[Either[InvalidJson, Json]] =
