@@ -27,7 +27,6 @@ import cats.effect.kernel.Async
 import com.perezbondia.jsonvalidator.core.SchemaService
 import com.perezbondia.jsonvalidator.api.model._
 import sttp.model.StatusCode
-import com.perezbondia.jsonvalidator.Greetings
 import cats.effect.kernel.Sync
 import sttp.model._
 import sttp.tapir._
@@ -72,4 +71,6 @@ object SchemaApi {
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
+
+  val endpoints = List(postSchemaEndpoint, getSchemaEndpoint)
 }

@@ -36,6 +36,8 @@ import sttp.apispec.openapi.circe.yaml._
 import sttp.tapir.docs.openapi._
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.SwaggerUI
+import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.api.SchemaApi
 
 object Server extends IOApp {
   val log = LoggerFactory.getLogger(Server.getClass())
@@ -52,10 +54,11 @@ object Server extends IOApp {
         ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig]
       )
       _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
-      helloWorldRoutes = new HelloWorld[IO]
-      docs             = OpenAPIDocsInterpreter().toOpenAPI(List(HelloWorld.greetings), "My Service", "1.0.0")
+      schemaService = new SchemaService[IO]()
+      schemaApi = new SchemaApi[IO](schemaService)
+      docs             = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
       swaggerRoutes    = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
-      routes           = helloWorldRoutes.routes <+> swaggerRoutes
+      routes           = schemaApi.routes <+> swaggerRoutes
       httpApp          = Router("/" -> routes).orNotFound
       resource = EmberServerBuilder
         .default[IO]
