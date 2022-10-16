@@ -26,12 +26,14 @@ import cats.implicits._
 
 import doobie.implicits._
 import doobie.postgres.circe.json.implicits._
+import doobie.postgres.sqlstate
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import io.circe.Json
 
 import com.perezbondia.jsonvalidator.core.SchemaRepo
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 
 class PostgresSchemaRepo[F[_]: MonadCancelThrow](transactor: Transactor[F]) extends SchemaRepo[F] {
 
@@ -39,7 +41,12 @@ class PostgresSchemaRepo[F[_]: MonadCancelThrow](transactor: Transactor[F]) exte
 
   override def storeSchema(schemaId: SchemaId, jsonSchema: Json): F[Unit] = {
     val insertQuery = sql"""insert into json_schemas(schema_id,json_schema) values ($schemaId, $jsonSchema)"""
-    insertQuery.update.run.transact(transactor).void
+    insertQuery.update.run
+      .exceptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+        WeakAsyncConnectionIO.raiseError(SchemaIdInUse(schemaId))
+      }
+      .transact(transactor)
+      .void
   }
 
   override def retrieveSchema(schemaId: SchemaId): F[Option[Json]] = {

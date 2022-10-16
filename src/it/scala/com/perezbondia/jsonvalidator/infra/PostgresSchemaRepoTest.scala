@@ -37,6 +37,7 @@ import java.util.UUID
 import io.circe.Json
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 import io.circe.parser.parse
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 
 final class PostgresSchemaRepoTest extends DbCatsEffectSuite {
 
@@ -58,6 +59,18 @@ final class PostgresSchemaRepoTest extends DbCatsEffectSuite {
       } yield res
       test.assertEquals(jsonSchema)
     }
+  }
 
+  test("handles duplicates") {
+    testResources.use { repo =>
+      val jsonSchema = parse("{}").toOption
+      val schemaId   = SchemaId("alreadyInUse")
+      val test = for {
+        jsonSchema <- IO.fromOption(jsonSchema)(new Error("unable to parse"))
+        _          <- repo.storeSchema(schemaId, jsonSchema)
+        res        <- repo.storeSchema(schemaId, jsonSchema).attempt
+      } yield res
+      test.assertEquals(Left(SchemaIdInUse(schemaId)))
+    }
   }
 }

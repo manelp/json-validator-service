@@ -21,6 +21,8 @@
 
 package com.perezbondia.jsonvalidator.core.domain
 
+import scala.util.control.NoStackTrace
+
 object model {
 
   opaque type SchemaId = String
@@ -29,7 +31,13 @@ object model {
     def apply(id: String): SchemaId = id
   }
 
-  final case class InvalidJson(message: String)      extends Exception
-  final case class SchemaIdInUse(schemaId: SchemaId) extends Exception
+  trait SchemaError extends Exception {
+    val message: String
+  }
+  final case class InvalidJson(message: String) extends SchemaError with NoStackTrace
+  final case class SchemaIdInUse(schemaId: SchemaId) extends SchemaError with NoStackTrace {
+    val message: String = s"$schemaId already in use"
+  }
+  final case class OtherError(message: String) extends SchemaError
 
 }

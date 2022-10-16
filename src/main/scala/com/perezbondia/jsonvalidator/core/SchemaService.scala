@@ -28,18 +28,25 @@ import io.circe._
 import io.circe.parser.parse
 
 import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
+import com.perezbondia.jsonvalidator.core.domain.model.OtherError
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaError
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 
 final class SchemaService[F[_]: Sync](schemaRepo: SchemaRepo[F]) {
-  def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[InvalidJson, Unit]] =
+  def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[SchemaError, Unit]] =
     // TODO: We can validate after checking that schemaId doesn't exists
     for {
-      res <- validateJsonSchema(inputSchema)
-      foo <- res match {
+      parsedJson <- validateJsonSchema(inputSchema)
+      res <- parsedJson match {
         case Left(value) => Sync[F].pure(Left(value))
-        case Right(json) => schemaRepo.storeSchema(schemaId, json).map(Right(_))
+        case Right(json) =>
+          schemaRepo.storeSchema(schemaId, json).map(Right(_)).handleErrorWith {
+            case t: SchemaIdInUse => Sync[F].pure(Left(t))
+            case t: Throwable     => Sync[F].pure(Left(OtherError(t.getMessage())))
+          }
       }
-    } yield foo
+    } yield res
 
   def getSchema(schemaId: SchemaId): F[Unit] = ???
 
