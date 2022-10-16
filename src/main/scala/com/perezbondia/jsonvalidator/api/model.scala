@@ -26,23 +26,38 @@ import io.circe.generic.semiauto._
 
 object model {
 
-  enum Action(val value: String) {
-    case UploadSchema   extends Action("uploadSchema")
-    case ValidateSchema extends Action("validateSchema")
-    case DownloadSchema extends Action("downloadSchema")
+  enum Action {
+    case uploadSchema     extends Action
+    case downloadSchema   extends Action
+    case validateDocument extends Action
   }
 
-  enum ResourceId(val value: String) {
-    case ConfigSchema extends ResourceId("config-schema")
+  enum ResourceId {
+    case `config-schema` extends ResourceId
   }
 
-  enum ResponseStatus(val value: String) {
-    case Success extends ResponseStatus("success")
-    case Error   extends ResponseStatus("error")
+  enum ResponseStatus {
+    case success extends ResponseStatus
+    case error   extends ResponseStatus
   }
 
-  final case class SuccessResponse(action: Action, id: ResourceId, status: ResponseStatus)
-  final case class ErrorResponse(action: Action, id: ResourceId, status: ResponseStatus, message: String)
+  trait ApiResponse {
+    val id: ResourceId
+    val status: ResponseStatus
+  }
+
+  final case class SuccessResponse(id: ResourceId, action: Action, status: ResponseStatus) extends ApiResponse
+  object SuccessResponse {
+    def apply(action: Action): SuccessResponse =
+      new SuccessResponse(ResourceId.`config-schema`, action, ResponseStatus.success)
+  }
+
+  final case class ErrorResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
+      extends ApiResponse
+  object ErrorResponse {
+    def apply(action: Action, message: String): ErrorResponse =
+      new ErrorResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
+  }
 
   // Codecs
 

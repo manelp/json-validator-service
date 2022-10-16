@@ -47,9 +47,10 @@ class SchemaApiTest extends CatsEffectSuite {
   given EntityDecoder[IO, SuccessResponse] = jsonOf
 
   test("POST /schema/schemaId returns success on valid json") {
-    val expectedStatusCode  = Status.Ok
-    val expectedResponse    = SuccessResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Success)
-    val expectedContentType = "application/json"
+    val expectedStatusCode     = Status.Ok
+    val expectedResponse       = SuccessResponse(Action.uploadSchema)
+    val expectedResponseString = """{"id":"config-schema","action":"uploadSchema","status":"success"}"""
+    val expectedContentType    = "application/json"
 
     val test = for {
       uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
@@ -57,19 +58,16 @@ class SchemaApiTest extends CatsEffectSuite {
       request = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
       response    <- service.orNotFound.run(request)
       body        <- response.as[SuccessResponse]
+      bodyString  <- response.as[String]
       contentType <- response.headers.get(CIString("content-type")).getOrThrow
-    } yield (response.status, body, contentType.head.value)
-    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
+    } yield (response.status, body, bodyString, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedResponseString, expectedContentType))
   }
 
   test("POST /schema/schemaId returns error on invalid json") {
     val expectedStatusCode = Status.BadRequest
-    val expectedResponse = ErrorResponse(
-      Action.UploadSchema,
-      ResourceId.ConfigSchema,
-      ResponseStatus.Error,
-      "ParsingFailure: expected \" got 'invali...' (line 1, column 13)"
-    )
+    val expectedResponse =
+      """{"id":"config-schema","action":"uploadSchema","status":"error","message":"ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
     val expectedContentType = "application/json"
 
     val test = for {
@@ -77,16 +75,15 @@ class SchemaApiTest extends CatsEffectSuite {
       service <- testRoutes
       request = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
       response    <- service.orNotFound.run(request)
-      body        <- response.as[ErrorResponse]
+      body        <- response.as[String]
       contentType <- response.headers.get(CIString("content-type")).getOrThrow
     } yield (response.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
   }
 
   test("GET /schema/schemaId returns bad request") {
-    val expectedStatusCode = Status.BadRequest
-    val expectedResponse =
-      ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "schema schemaId not found")
+    val expectedStatusCode  = Status.BadRequest
+    val expectedResponse    = ErrorResponse(Action.downloadSchema, "schema schemaId not found")
     val expectedContentType = "application/json"
 
     val response = for {

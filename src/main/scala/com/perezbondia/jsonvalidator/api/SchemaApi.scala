@@ -27,7 +27,6 @@ import cats.implicits._
 
 import io.circe.Json
 import org.http4s.HttpRoutes
-import sttp.model.StatusCode
 import sttp.model._
 import sttp.tapir.Codec.PlainCodec
 import sttp.tapir._
@@ -43,9 +42,8 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
   private val postSchema: HttpRoutes[F] =
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.postSchemaEndpoint.serverLogic { (schemaId, jsonSchema) =>
       schemaService.registerSchema(schemaId, jsonSchema).map {
-        case Right(_) => Right(SuccessResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Success))
-        case Left(error) =>
-          Left(ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, error.message))
+        case Right(_)    => Right(SuccessResponse(Action.uploadSchema))
+        case Left(error) => Left(ErrorResponse(Action.uploadSchema, error.message))
       }
     })
 
@@ -53,14 +51,7 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.retrieveSchemaEndpoint.serverLogic { schemaId =>
       schemaService.retrieveSchema(schemaId).map {
         case Some(json) => Right(json.noSpaces)
-        case None =>
-          ErrorResponse(
-            Action.DownloadSchema,
-            ResourceId.ConfigSchema,
-            ResponseStatus.Error,
-            s"schema $schemaId not found"
-          )
-            .asLeft[String]
+        case None       => ErrorResponse(Action.downloadSchema, s"schema $schemaId not found").asLeft[String]
       }
     })
 
