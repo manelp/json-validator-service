@@ -19,31 +19,23 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.core.domain
+package com.perezbondia.jsonvalidator.core
 
-import scala.util.control.NoStackTrace
+import munit.CatsEffectSuite
+import cats.effect.IO
+import io.circe.Json
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 
-object model {
+class JsonParserTest extends CatsEffectSuite {
 
-  opaque type SchemaId = String
-
-  object SchemaId {
-    def apply(id: String): SchemaId = id
+  test("parses valid json"){
+    val test = JsonParser.validateJsonSchema[IO]("{}")
+    test.assertEquals(Right(Json.obj()))
   }
+  
+  test("returns InvalidJson if json invalid"){
+    val test =  JsonParser.validateJsonSchema[IO]("{invalid})")
 
-  final case class InvalidJson(message: String) extends Exception with NoStackTrace
-
-  trait SchemaError extends Exception {
-    val message: String
+    test.assertEquals(Left(InvalidJson("Invalid JSON. ParsingFailure: expected \" got 'invali...' (line 1, column 2)")))
   }
-  final case class SchemaIdInUse(schemaId: SchemaId) extends SchemaError with NoStackTrace {
-    val message: String = s"$schemaId already in use"
-  }
-  final case class OtherError(message: String) extends SchemaError
-
-  trait ValidateError extends Exception {
-    val message: String
-  }
-  final case class ValidateInvalidJson(message: String) extends ValidateError with NoStackTrace
-
 }

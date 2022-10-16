@@ -42,21 +42,14 @@ class SchemaServiceTest extends CatsEffectSuite {
       repo = new FakeSchemaRepo(ref)
     } yield new SchemaService[IO](repo)
 
-  test("registerSchema valid json") {
-    val test = testResource(Map.empty).use(service => service.registerSchema(SchemaId("schemaId"), "{}"))
-
+  test("registerSchema json") {
+    val test = testResource(Map.empty).use(service => service.registerSchema(SchemaId("schemaId"), Json.obj()))
     test.assertEquals(Right(()))
-  }
-
-  test("registerSchema invalid json returns InvalidJson") {
-    val test = testResource(Map.empty).use(service => service.registerSchema(SchemaId("schemaId"), "{invalid}"))
-
-    test.assertEquals(Left(InvalidJson("ParsingFailure: expected \" got 'invali...' (line 1, column 2)")))
   }
 
   test("register existing schema returns SchemaIdInUse") {
     val schemaId = SchemaId("schemaId")
-    val test     = testResource(Map(schemaId -> Json.obj())).use(service => service.registerSchema(schemaId, "{}"))
+    val test     = testResource(Map(schemaId -> Json.obj())).use(service => service.registerSchema(schemaId, Json.obj()))
 
     test.assertEquals(Left(SchemaIdInUse(schemaId)))
   }

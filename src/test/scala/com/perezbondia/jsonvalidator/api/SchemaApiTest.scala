@@ -69,7 +69,7 @@ class SchemaApiTest extends CatsEffectSuite {
   test("POST /schema/schemaId returns bad request on invalid json") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
-      """{"id":"config-schema","action":"uploadSchema","status":"error","message":"ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
+      """{"id":"config-schema","action":"uploadSchema","status":"error","message":"Invalid JSON. ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
     val expectedContentType = "application/json"
 
     val test = testResources(Map.empty).use { service =>

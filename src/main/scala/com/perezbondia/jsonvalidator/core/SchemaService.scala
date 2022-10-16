@@ -34,22 +34,12 @@ import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 
 final class SchemaService[F[_]: Sync](schemaRepo: SchemaRepo[F]) {
-  def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[SchemaError, Unit]] =
-    // TODO: We can validate after checking that schemaId doesn't exists
-    for {
-      parsedJson <- validateJsonSchema(inputSchema)
-      res <- parsedJson match {
-        case Left(value) => Sync[F].pure(Left(value))
-        case Right(json) =>
-          schemaRepo.storeSchema(schemaId, json).map(Right(_)).handleErrorWith {
-            case t: SchemaIdInUse => Sync[F].pure(Left(t))
-            case t: Throwable     => Sync[F].pure(Left(OtherError(t.getMessage())))
-          }
-      }
-    } yield res
+  def registerSchema(schemaId: SchemaId, jsonSchema: Json): F[Either[SchemaError, Unit]] =
+    schemaRepo.storeSchema(schemaId, jsonSchema).map(Right(_)).handleErrorWith {
+      case t: SchemaIdInUse => Sync[F].pure(Left(t))
+      case t: Throwable     => Sync[F].pure(Left(OtherError(t.getMessage())))
+    }
 
   def retrieveSchema(schemaId: SchemaId): F[Option[Json]] = schemaRepo.retrieveSchema(schemaId)
 
-  private[core] def validateJsonSchema(inputSchema: String): F[Either[InvalidJson, Json]] =
-    Sync[F].delay(parse(inputSchema).left.map(r => InvalidJson(r.show)))
 }

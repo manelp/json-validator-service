@@ -37,15 +37,23 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 
 import com.perezbondia.jsonvalidator.api.model._
 import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.JsonParser
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 
 final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
   private val postSchema: HttpRoutes[F] =
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.postSchemaEndpoint.serverLogic { (schemaId, jsonSchema) =>
-      schemaService.registerSchema(schemaId, jsonSchema).map {
-        case Right(_)    => Right(SuccessResponse(Action.uploadSchema))
-        case Left(error) => Left(ErrorResponse.badRequest(Action.uploadSchema, error.message))
-      }
+      for {
+        parsedJson <- JsonParser.validateJsonSchema(jsonSchema)
+        res <- parsedJson match {
+          case Left(error) => Async[F].pure(Left(ErrorResponse.badRequest(Action.uploadSchema, error.message)))
+          case Right(validJson) =>
+            schemaService.registerSchema(schemaId, validJson).map {
+              case Right(_)    => Right(SuccessResponse(Action.uploadSchema))
+              case Left(error) => Left(ErrorResponse.badRequest(Action.uploadSchema, error.message))
+            }
+        }
+      } yield res
     })
 
   private val retrieveSchema: HttpRoutes[F] =

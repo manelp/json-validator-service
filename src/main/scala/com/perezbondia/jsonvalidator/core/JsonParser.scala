@@ -19,31 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.core.domain
+package com.perezbondia.jsonvalidator.core
 
-import scala.util.control.NoStackTrace
+import cats.MonadThrow
 
-object model {
+import io.circe.parser.parse
+import io.circe.Json
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
+import cats.effect.kernel.Sync
+import cats.implicits._
 
-  opaque type SchemaId = String
-
-  object SchemaId {
-    def apply(id: String): SchemaId = id
-  }
-
-  final case class InvalidJson(message: String) extends Exception with NoStackTrace
-
-  trait SchemaError extends Exception {
-    val message: String
-  }
-  final case class SchemaIdInUse(schemaId: SchemaId) extends SchemaError with NoStackTrace {
-    val message: String = s"$schemaId already in use"
-  }
-  final case class OtherError(message: String) extends SchemaError
-
-  trait ValidateError extends Exception {
-    val message: String
-  }
-  final case class ValidateInvalidJson(message: String) extends ValidateError with NoStackTrace
-
+object JsonParser {
+  def validateJsonSchema[F[_]: Sync](inputSchema: String): F[Either[InvalidJson, Json]] =
+    Sync[F].delay(parse(inputSchema).left.map(r => InvalidJson(s"Invalid JSON. ${r.show}")))
 }
