@@ -52,11 +52,17 @@ object model {
       new SuccessResponse(ResourceId.`config-schema`, action, ResponseStatus.success)
   }
 
-  final case class ErrorResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
-      extends ApiResponse
+  sealed trait ErrorResponse extends ApiResponse
+
+  final case class BadRequestResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
+      extends ErrorResponse
+  final case class NotFoundResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
+      extends ErrorResponse
   object ErrorResponse {
-    def apply(action: Action, message: String): ErrorResponse =
-      new ErrorResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
+    def notFound(action: Action, message: String): NotFoundResponse =
+      new NotFoundResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
+    def badRequest(action: Action, message: String): BadRequestResponse =
+      new BadRequestResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
   }
 
   // Codecs
@@ -72,7 +78,8 @@ object model {
       (a: ResponseStatus) => Encoder.encodeString(a.toString)
     )
 
-  given Codec[ErrorResponse]   = deriveCodec[ErrorResponse]
-  given Codec[SuccessResponse] = deriveCodec[SuccessResponse]
+  given Codec[BadRequestResponse] = deriveCodec[BadRequestResponse]
+  given Codec[NotFoundResponse]   = deriveCodec[NotFoundResponse]
+  given Codec[SuccessResponse]    = deriveCodec[SuccessResponse]
 
 }

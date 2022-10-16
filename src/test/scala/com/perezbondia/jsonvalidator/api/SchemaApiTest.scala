@@ -43,8 +43,9 @@ import com.perezbondia.jsonvalidator.types._
 
 class SchemaApiTest extends CatsEffectSuite {
 
-  given EntityDecoder[IO, ErrorResponse]   = jsonOf
-  given EntityDecoder[IO, SuccessResponse] = jsonOf
+  given EntityDecoder[IO, BadRequestResponse] = jsonOf
+  given EntityDecoder[IO, NotFoundResponse]   = jsonOf
+  given EntityDecoder[IO, SuccessResponse]    = jsonOf
 
   test("POST /schema/schemaId returns success on valid json") {
     val expectedStatusCode     = Status.Ok
@@ -52,7 +53,7 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedResponseString = """{"id":"config-schema","action":"uploadSchema","status":"success"}"""
     val expectedContentType    = "application/json"
 
-    val test = testResources.use { service =>
+    val test = testResources(Map.empty).use { service =>
       for {
         uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
         request = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
@@ -65,13 +66,13 @@ class SchemaApiTest extends CatsEffectSuite {
     test.assertEquals((expectedStatusCode, expectedResponse, expectedResponseString, expectedContentType))
   }
 
-  test("POST /schema/schemaId returns error on invalid json") {
+  test("POST /schema/schemaId returns bad request on invalid json") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
       """{"id":"config-schema","action":"uploadSchema","status":"error","message":"ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
     val expectedContentType = "application/json"
 
-    val test = testResources.use { service =>
+    val test = testResources(Map.empty).use { service =>
       for {
         uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
         request = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
@@ -83,34 +84,53 @@ class SchemaApiTest extends CatsEffectSuite {
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
   }
 
-  test("GET /schema/schemaId returns bad request") {
-    val expectedStatusCode  = Status.BadRequest
-    val expectedResponse    = ErrorResponse(Action.downloadSchema, "schema schemaId not found")
+  test("GET /schema/schemaId returns not found") {
+    val expectedStatusCode  = Status.NotFound
+    val expectedResponse    = ErrorResponse.notFound(Action.downloadSchema, "schema schemaId not found")
     val expectedContentType = "application/json"
 
-    val response = testResources.use { service =>
+    val response = testResources(Map.empty).use { service =>
       for {
         uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-        request = Request[IO](
-          method = Method.GET,
-          uri = uri
-        )
+        request = Request[IO](method = Method.GET, uri = uri)
         response <- service.orNotFound.run(request)
       } yield response
     }
 
     val test = for {
       result      <- response
-      body        <- result.as[ErrorResponse]
+      body        <- result.as[NotFoundResponse]
       contentType <- result.headers.get(CIString("content-type")).getOrThrow
     } yield (result.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
 
-  val testResources: Resource[IO, HttpRoutes[IO]] =
+  test("GET /schema/schemaId returns schema") {
+    val expectedStatusCode  = Status.Ok
+    val expectedResponse    = """{}"""
+    val expectedContentType = "application/json"
+
+    val response = testResources(Map(SchemaId("schemaId") -> Json.obj())).use { service =>
+      for {
+        uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+        request = Request[IO](method = Method.GET, uri = uri)
+        response <- service.orNotFound.run(request)
+      } yield response
+    }
+
+    val test = for {
+      result      <- response
+      body        <- result.as[String]
+      contentType <- result.headers.get(CIString("content-type")).getOrThrow
+    } yield (result.status, body, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
+
+  }
+
+  def testResources(initialValues: Map[SchemaId, Json]): Resource[IO, HttpRoutes[IO]] =
     for {
-      ref <- Resource.eval(Ref[IO].of(Map.empty[SchemaId, Json]))
+      ref <- Resource.eval(Ref[IO].of(initialValues))
       repo                    = new FakeSchemaRepo(ref)
       schemaService           = new SchemaService[IO](repo)
       service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
