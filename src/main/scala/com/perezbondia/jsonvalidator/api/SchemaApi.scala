@@ -46,11 +46,11 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
       for {
         parsedJson <- JsonParser.validateJsonSchema(jsonSchema)
         res <- parsedJson match {
-          case Left(error) => Async[F].pure(Left(ErrorResponse.badRequest(Action.uploadSchema, error.message)))
+          case Left(error) => Async[F].pure(Left(ErrorResponse.badRequest(schemaId, Action.uploadSchema, error.message)))
           case Right(validJson) =>
             schemaService.registerSchema(schemaId, validJson).map {
-              case Right(_)    => Right(SuccessResponse(Action.uploadSchema))
-              case Left(error) => Left(ErrorResponse.badRequest(Action.uploadSchema, error.message))
+              case Right(_)    => Right(SuccessResponse(schemaId, Action.uploadSchema))
+              case Left(error) => Left(ErrorResponse.badRequest(schemaId, Action.uploadSchema, error.message))
             }
         }
       } yield res
@@ -60,7 +60,7 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.retrieveSchemaEndpoint.serverLogic { schemaId =>
       schemaService.retrieveSchema(schemaId).map {
         case Some(json) => Right(json.noSpaces)
-        case None       => ErrorResponse.notFound(Action.downloadSchema, schemaId).asLeft[String]
+        case None       => ErrorResponse.notFound(schemaId, Action.downloadSchema).asLeft[String]
       }
     })
 

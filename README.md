@@ -40,7 +40,7 @@ Be aware that the integration tests might need a working database.
 
 Start the local postgres with:
 ```
-docker-compose start
+docker-compose up
 ```
 
 Then run the application with

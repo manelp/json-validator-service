@@ -50,7 +50,7 @@ class ValidateApiTest extends CatsEffectSuite {
 
   test("POST /validate/schemaId returns not found request") {
     val expectedStatusCode  = Status.NotFound
-    val expectedResponse    = ErrorResponse.notFound(Action.validateDocument, SchemaId("schemaId"))
+    val expectedResponse    = ErrorResponse.notFound(schemaId, Action.validateDocument)
     val expectedContentType = "application/json"
 
     val response = testResources().use { service =>
@@ -71,7 +71,7 @@ class ValidateApiTest extends CatsEffectSuite {
   test("POST /validate/schemaId with empty body") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
-      ErrorResponse.badRequest(Action.validateDocument, "Invalid JSON. ParsingFailure: exhausted input")
+      ErrorResponse.badRequest(schemaId, Action.validateDocument, "Invalid JSON. ParsingFailure: exhausted input")
     val expectedContentType = "application/json"
 
     val response = testResources().use { service =>
@@ -89,6 +89,8 @@ class ValidateApiTest extends CatsEffectSuite {
     } yield (result.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
   }
+
+  private val schemaId = SchemaId("schemaId")
 
   def testResources(): Resource[IO, HttpRoutes[IO]] =
     for {

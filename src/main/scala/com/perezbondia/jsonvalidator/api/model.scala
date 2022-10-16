@@ -25,6 +25,7 @@ import io.circe._
 import io.circe.generic.semiauto._
 
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import sttp.tapir.Schema
 
 object model {
 
@@ -34,37 +35,35 @@ object model {
     case validateDocument extends Action
   }
 
-  enum ResourceId {
-    case `config-schema` extends ResourceId
-  }
+  final case class Id(value: String) extends AnyVal
 
   enum ResponseStatus {
     case success extends ResponseStatus
     case error   extends ResponseStatus
   }
 
-  trait ApiResponse {
-    val id: ResourceId
+  sealed trait ApiResponse extends Product with Serializable {
+    val id: SchemaId
     val status: ResponseStatus
   }
 
-  final case class SuccessResponse(id: ResourceId, action: Action, status: ResponseStatus) extends ApiResponse
+  final case class SuccessResponse(id: SchemaId, action: Action, status: ResponseStatus) extends ApiResponse
   object SuccessResponse {
-    def apply(action: Action): SuccessResponse =
-      new SuccessResponse(ResourceId.`config-schema`, action, ResponseStatus.success)
+    def apply(id: SchemaId, action: Action): SuccessResponse =
+      new SuccessResponse(id, action, ResponseStatus.success)
   }
 
   sealed trait ErrorResponse extends ApiResponse
 
-  final case class BadRequestResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
+  final case class BadRequestResponse(id: SchemaId, action: Action, status: ResponseStatus, message: String)
       extends ErrorResponse
-  final case class NotFoundResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
+  final case class NotFoundResponse(id: SchemaId, action: Action, status: ResponseStatus, message: String)
       extends ErrorResponse
   object ErrorResponse {
-    def notFound(action: Action, schemaId: SchemaId): NotFoundResponse =
-      new NotFoundResponse(ResourceId.`config-schema`, action, ResponseStatus.error, s"schema $schemaId not found")
-    def badRequest(action: Action, message: String): BadRequestResponse =
-      new BadRequestResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
+    def notFound(schemaId: SchemaId, action: Action): NotFoundResponse =
+      new NotFoundResponse(schemaId, action, ResponseStatus.error, s"not found")
+    def badRequest(id: SchemaId, action: Action, message: String): BadRequestResponse =
+      new BadRequestResponse(id, action, ResponseStatus.error, message)
   }
 
   // Codecs
@@ -72,8 +71,8 @@ object model {
   // TODO: Use a generic solution for scala3 enum
   given Codec[Action] =
     Codec.from(Decoder.decodeString.map(Action.valueOf), (a: Action) => Encoder.encodeString(a.toString))
-  given Codec[ResourceId] =
-    Codec.from(Decoder.decodeString.map(ResourceId.valueOf), (a: ResourceId) => Encoder.encodeString(a.toString))
+  given Codec[SchemaId] =
+    Codec.from(Decoder.decodeString.map(SchemaId.apply), (a: SchemaId) => Encoder.encodeString(a.id))
   given Codec[ResponseStatus] =
     Codec.from(
       Decoder.decodeString.map(ResponseStatus.valueOf),
@@ -83,5 +82,4 @@ object model {
   given Codec[BadRequestResponse] = deriveCodec[BadRequestResponse]
   given Codec[NotFoundResponse]   = deriveCodec[NotFoundResponse]
   given Codec[SuccessResponse]    = deriveCodec[SuccessResponse]
-
 }

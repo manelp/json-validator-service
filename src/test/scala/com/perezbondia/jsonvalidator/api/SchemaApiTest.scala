@@ -49,8 +49,8 @@ class SchemaApiTest extends CatsEffectSuite {
 
   test("POST /schema/schemaId returns success on valid json") {
     val expectedStatusCode     = Status.Ok
-    val expectedResponse       = SuccessResponse(Action.uploadSchema)
-    val expectedResponseString = """{"id":"config-schema","action":"uploadSchema","status":"success"}"""
+    val expectedResponse       = SuccessResponse(schemaId, Action.uploadSchema)
+    val expectedResponseString = """{"id":"schemaId","action":"uploadSchema","status":"success"}"""
     val expectedContentType    = "application/json"
 
     val test = testResources(Map.empty).use { service =>
@@ -69,7 +69,7 @@ class SchemaApiTest extends CatsEffectSuite {
   test("POST /schema/schemaId returns bad request on invalid json") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
-      """{"id":"config-schema","action":"uploadSchema","status":"error","message":"Invalid JSON. ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
+      """{"id":"schemaId","action":"uploadSchema","status":"error","message":"Invalid JSON. ParsingFailure: expected \" got 'invali...' (line 1, column 13)"}"""
     val expectedContentType = "application/json"
 
     val test = testResources(Map.empty).use { service =>
@@ -86,7 +86,7 @@ class SchemaApiTest extends CatsEffectSuite {
 
   test("GET /schema/schemaId returns not found") {
     val expectedStatusCode  = Status.NotFound
-    val expectedResponse    = ErrorResponse.notFound(Action.downloadSchema, SchemaId("schemaId"))
+    val expectedResponse    = ErrorResponse.notFound(schemaId, Action.downloadSchema)
     val expectedContentType = "application/json"
 
     val response = testResources(Map.empty).use { service =>
@@ -127,6 +127,8 @@ class SchemaApiTest extends CatsEffectSuite {
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
+
+  private val schemaId = SchemaId("schemaId")
 
   def testResources(initialValues: Map[SchemaId, Json]): Resource[IO, HttpRoutes[IO]] =
     for {

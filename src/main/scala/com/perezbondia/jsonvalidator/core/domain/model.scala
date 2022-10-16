@@ -27,11 +27,7 @@ import io.circe.Json
 
 object model {
 
-  opaque type SchemaId = String
-
-  object SchemaId {
-    def apply(id: String): SchemaId = id
-  }
+  final case class SchemaId(id: String) extends Product with Serializable
 
   final case class InvalidJson(message: String) extends Exception with NoStackTrace
 
