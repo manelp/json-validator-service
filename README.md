@@ -54,7 +54,7 @@ Useful commands:
 
 * To upload a schema
 ```
-curl http://localhost:8081/schema/config-schema -X POST -d @./jsonExamples/config-schema.json
+curl http://localhost:8081/schema/config-schema -X POST -d @./examples/config-schema.json
 ```
 
 * To download a schema
@@ -64,13 +64,13 @@ curl http://localhost:8081/schema/config-schema -X GET
 
 * To test validation successful
 ```
-curl http://localhost:8081/validate/config-schema -X POST -d @./jsonExamples/valid-document.json
+curl http://localhost:8081/validate/config-schema -X POST -d @./examples/valid-document.json
 ```
 
 
 * To test validation errors
 ```
-curl http://localhost:8081/validate/config-schema -X POST -d @./jsonExamples/invalid-document.json
+curl http://localhost:8081/validate/config-schema -X POST -d @./examples/invalid-document.json
 ```
 
 
