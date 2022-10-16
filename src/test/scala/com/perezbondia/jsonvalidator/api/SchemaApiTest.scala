@@ -41,7 +41,8 @@ class SchemaApiTest extends CatsEffectSuite {
 
   test("POST /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
-    val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+    val expectedResponse =
+      ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
     val expectedContentType = "application/json"
 
     val response = for {
@@ -56,18 +57,18 @@ class SchemaApiTest extends CatsEffectSuite {
     } yield response
 
     val test = for {
-      result <- response
-      body   <- result.as[ErrorResponse]
+      result      <- response
+      body        <- result.as[ErrorResponse]
       contentType <- result.headers.get(CIString("content-type")).getOrThrow
     } yield (result.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
 
-
   test("GET /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
-    val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+    val expectedResponse =
+      ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
     val expectedContentType = "application/json"
 
     val response = for {
@@ -82,8 +83,8 @@ class SchemaApiTest extends CatsEffectSuite {
     } yield response
 
     val test = for {
-      result <- response
-      body   <- result.as[ErrorResponse]
+      result      <- response
+      body        <- result.as[ErrorResponse]
       contentType <- result.headers.get(CIString("content-type")).getOrThrow
     } yield (result.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))

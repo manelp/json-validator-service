@@ -50,7 +50,6 @@ object types {
 
   }
 
-
   opaque type JdbcDriverName = String
   object JdbcDriverName {
     val Format: Regex = "^\\w+\\.[\\w\\d\\.]+[\\w\\d]+$".r

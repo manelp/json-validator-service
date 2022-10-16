@@ -24,8 +24,9 @@ package com.perezbondia.jsonvalidator.test
 import cats.effect.IO
 
 object TestHelpers {
- 
+
   extension [A](self: Option[A]) {
+    @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
     def getOrThrow: IO[A] = IO.fromOption(self)(throw Error("Option was None"))
   }
 }

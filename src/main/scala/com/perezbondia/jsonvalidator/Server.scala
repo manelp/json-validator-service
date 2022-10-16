@@ -55,11 +55,11 @@ object Server extends IOApp {
       )
       // _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
       schemaService = new SchemaService[IO]()
-      schemaApi = new SchemaApi[IO](schemaService)
-      docs             = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
-      swaggerRoutes    = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
-      routes           = schemaApi.routes <+> swaggerRoutes
-      httpApp          = Router("/" -> routes).orNotFound
+      schemaApi     = new SchemaApi[IO](schemaService)
+      docs          = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
+      swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
+      routes        = schemaApi.routes <+> swaggerRoutes
+      httpApp       = Router("/" -> routes).orNotFound
       resource = EmberServerBuilder
         .default[IO]
         .withHost(serviceConfig.host)

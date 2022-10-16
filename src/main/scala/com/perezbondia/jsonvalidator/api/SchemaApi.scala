@@ -39,12 +39,18 @@ import io.circe.Json
 final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
   private val postSchema: HttpRoutes[F] =
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.postSchemaEndpoint.serverLogic { _ =>
-      Sync[F].delay(ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented").asLeft[Unit])
+      Sync[F].delay(
+        ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+          .asLeft[Unit]
+      )
     })
 
   private val getSchema: HttpRoutes[F] =
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.getSchemaEndpoint.serverLogic { _ =>
-      Sync[F].delay(ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented").asLeft[String])
+      Sync[F].delay(
+        ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+          .asLeft[String]
+      )
     })
 
   val routes: HttpRoutes[F] = postSchema <+> getSchema
@@ -53,11 +59,11 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
 object SchemaApi {
 
   private val baseEndpoint: Endpoint[Unit, String, ErrorResponse, Unit, Any] = endpoint
-      .in("schema")
-      .in(path[String]("schemaId"))
-      .errorOut(jsonBody[ErrorResponse])
-      .errorOut(header(Header.contentType(MediaType.ApplicationJson)))
-      .out(header(Header.contentType(MediaType.ApplicationJson)))
+    .in("schema")
+    .in(path[String]("schemaId"))
+    .errorOut(jsonBody[ErrorResponse])
+    .errorOut(header(Header.contentType(MediaType.ApplicationJson)))
+    .out(header(Header.contentType(MediaType.ApplicationJson)))
 
   val postSchemaEndpoint: Endpoint[Unit, (String, String), ErrorResponse, Unit, Any] =
     baseEndpoint
