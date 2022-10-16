@@ -62,5 +62,4 @@ trait DbCatsEffectSuite extends CatsEffectSuite {
     }
   }
 
-
 }

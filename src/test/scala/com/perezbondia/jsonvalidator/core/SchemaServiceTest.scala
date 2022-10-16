@@ -23,6 +23,7 @@ package com.perezbondia.jsonvalidator.core
 
 import cats.effect.IO
 import cats.effect.Resource
+import cats.effect.kernel.Ref
 
 import io.circe._
 import io.circe.literal._
@@ -30,12 +31,16 @@ import munit.CatsEffectSuite
 
 import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.infra.FakeSchemaRepo
 
 class SchemaServiceTest extends CatsEffectSuite {
 
   val resourcesFixture = ResourceSuiteLocalFixture(
     "testResources",
-    Resource.eval(IO(new SchemaService[IO]()))
+    for {
+      ref <- Resource.eval(Ref[IO].of(Map.empty[SchemaId, Json]))
+      repo = new FakeSchemaRepo(ref)
+    } yield new SchemaService[IO](repo)
   )
 
   override def munitFixtures = List(resourcesFixture)

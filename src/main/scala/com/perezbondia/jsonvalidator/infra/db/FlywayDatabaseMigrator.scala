@@ -19,30 +19,34 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.perezbondia.jsonvalidator.core
+package com.perezbondia.jsonvalidator.infra.db
 
-import cats.effect.Sync
-import cats.implicits._
+import cats.effect.IO
 
-import io.circe._
-import io.circe.parser.parse
+import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.output.MigrateResult
 
-import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
-import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.types._
 
-final class SchemaService[F[_]: Sync](schemaRepo: SchemaRepo[F]) {
-  def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[InvalidJson, Unit]] =
-    // TODO: We can validate after checking that schemaId doesn't exists
-    for {
-      res <- validateJsonSchema(inputSchema)
-      foo <- res match {
-        case Left(value) => Sync[F].pure(Left(value))
-        case Right(json) => schemaRepo.storeSchema(schemaId, json).map(Right(_))
-      }
-    } yield foo
+final class FlywayDatabaseMigrator {
 
-  def getSchema(schemaId: SchemaId): F[Unit] = ???
+  /** Apply pending migrations to the database.
+    *
+    * @param url
+    *   A JDBC database connection url.
+    * @param user
+    *   The login name for the connection.
+    * @param pass
+    *   The password for the connection.
+    * @return
+    *   A migrate result object holding information about executed migrations and the schema. See the Java-Doc of Flyway
+    *   for details.
+    */
+  def migrate(url: JdbcUrl, user: JdbcUsername, pass: JdbcPassword): IO[MigrateResult] =
+    IO {
+      val flyway: Flyway =
+        Flyway.configure().dataSource(url.toString, user.toString, pass.toString).load()
+      flyway.migrate()
+    }
 
-  private[core] def validateJsonSchema(inputSchema: String): F[Either[InvalidJson, Json]] =
-    Sync[F].delay(parse(inputSchema).left.map(r => InvalidJson(r.show)))
 }

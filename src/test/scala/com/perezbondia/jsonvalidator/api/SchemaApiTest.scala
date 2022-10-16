@@ -36,6 +36,8 @@ import org.typelevel.ci.CIString.apply
 
 import com.perezbondia.jsonvalidator.api.model._
 import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.infra.FakeSchemaRepo
 import com.perezbondia.jsonvalidator.test.TestHelpers._
 import com.perezbondia.jsonvalidator.types._
 
@@ -50,10 +52,9 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedContentType = "application/json"
 
     val test = for {
-      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      schemaService           = new SchemaService[IO]()
-      service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
-      request                 = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
+      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+      service <- testRoutes
+      request = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
       response    <- service.orNotFound.run(request)
       body        <- response.as[SuccessResponse]
       contentType <- response.headers.get(CIString("content-type")).getOrThrow
@@ -72,10 +73,9 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedContentType = "application/json"
 
     val test = for {
-      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      schemaService           = new SchemaService[IO]()
-      service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
-      request                 = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
+      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+      service <- testRoutes
+      request = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
       response    <- service.orNotFound.run(request)
       body        <- response.as[ErrorResponse]
       contentType <- response.headers.get(CIString("content-type")).getOrThrow
@@ -90,9 +90,8 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedContentType = "application/json"
 
     val response = for {
-      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
-      schemaService           = new SchemaService[IO]()
-      service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
+      uri     <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+      service <- testRoutes
       request = Request[IO](
         method = Method.GET,
         uri = uri
@@ -108,4 +107,12 @@ class SchemaApiTest extends CatsEffectSuite {
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
 
   }
+
+  def testRoutes: IO[HttpRoutes[IO]] =
+    for {
+      ref <- Ref[IO].of(Map.empty[SchemaId, Json])
+      repo                    = new FakeSchemaRepo(ref)
+      schemaService           = new SchemaService[IO](repo)
+      service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
+    } yield service
 }

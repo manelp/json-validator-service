@@ -21,14 +21,17 @@
 
 package com.perezbondia.jsonvalidator.infra.db
 
+import scala.concurrent.duration._
+
+import cats.effect.IO
+import cats.effect.kernel.Resource
+
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import cats.effect.kernel.Resource
-import com.perezbondia.jsonvalidator.config.DatabaseConfig
-import scala.concurrent.duration._
-import cats.effect.IO
-import doobie.util.transactor.Transactor
 import doobie.util.ExecutionContexts
+import doobie.util.transactor.Transactor
+
+import com.perezbondia.jsonvalidator.config.DatabaseConfig
 
 object TransactorResource {
 

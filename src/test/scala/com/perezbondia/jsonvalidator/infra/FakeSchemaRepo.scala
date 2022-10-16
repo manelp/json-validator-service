@@ -22,31 +22,23 @@
 package com.perezbondia.jsonvalidator.infra
 
 import cats.effect.IO
+import cats.effect.kernel.Ref
 
-import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.output.MigrateResult
+import io.circe.Json
 
-import com.perezbondia.jsonvalidator.types._
+import com.perezbondia.jsonvalidator.core.SchemaRepo
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 
-final class FlywayDatabaseMigrator {
+class FakeSchemaRepo(ref: Ref[IO, Map[SchemaId, Json]]) extends SchemaRepo[IO] {
 
-  /** Apply pending migrations to the database.
-    *
-    * @param url
-    *   A JDBC database connection url.
-    * @param user
-    *   The login name for the connection.
-    * @param pass
-    *   The password for the connection.
-    * @return
-    *   A migrate result object holding information about executed migrations and the schema. See the Java-Doc of Flyway
-    *   for details.
-    */
-  def migrate(url: JdbcUrl, user: JdbcUsername, pass: JdbcPassword): IO[MigrateResult] =
-    IO {
-      val flyway: Flyway =
-        Flyway.configure().dataSource(url.toString, user.toString, pass.toString).load()
-      flyway.migrate()
-    }
+  override def storeSchema(schemaId: SchemaId, jsonSchema: Json): IO[Unit] =
+    for {
+      r <- ref.get
+      _ <- IO.whenA(r.get(schemaId).isDefined)(IO.raiseError(SchemaIdInUse(schemaId)))
+      _ <- ref.update(m => m.updated(schemaId, jsonSchema))
+    } yield ()
+
+  override def retrieveSchema(schemaId: SchemaId): IO[Option[Json]] = ref.get.map(_.get(schemaId))
 
 }

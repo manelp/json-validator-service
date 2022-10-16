@@ -39,39 +39,43 @@ import com.perezbondia.jsonvalidator.api.SchemaApi
 import com.perezbondia.jsonvalidator.api._
 import com.perezbondia.jsonvalidator.config._
 import com.perezbondia.jsonvalidator.core.SchemaService
-import com.perezbondia.jsonvalidator.infra.FlywayDatabaseMigrator
+import com.perezbondia.jsonvalidator.infra.PostgresSchemaRepo
+import com.perezbondia.jsonvalidator.infra.db.FlywayDatabaseMigrator
+import com.perezbondia.jsonvalidator.infra.db.TransactorResource
 
 object Server extends IOApp {
   val log = LoggerFactory.getLogger(Server.getClass())
 
   override def run(args: List[String]): IO[ExitCode] = {
     val migrator = new FlywayDatabaseMigrator
-
-    for {
-      config <- IO(ConfigFactory.load(getClass().getClassLoader()))
-      dbConfig <- IO(
-        ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
+    val resource = for {
+      config <- Resource.eval(IO(ConfigFactory.load(getClass().getClassLoader())))
+      dbConfig <- Resource.eval(
+        IO(
+          ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY.toString).loadOrThrow[DatabaseConfig]
+        )
       )
-      serviceConfig <- IO(
-        ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig]
+      _ <- Resource.eval(migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass))
+      serviceConfig <- Resource.eval(
+        IO(ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig])
       )
-      _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
-      schemaService = new SchemaService[IO]()
+      transactor <- TransactorResource.resource(dbConfig)
+      schemaRepo    = new PostgresSchemaRepo[IO](transactor)
+      schemaService = new SchemaService[IO](schemaRepo)
       schemaApi     = new SchemaApi[IO](schemaService)
       docs          = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
       swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
       routes        = schemaApi.routes <+> swaggerRoutes
       httpApp       = Router("/" -> routes).orNotFound
-      resource = EmberServerBuilder
+      resource <- EmberServerBuilder
         .default[IO]
         .withHost(serviceConfig.host)
         .withPort(serviceConfig.port)
         .withHttpApp(httpApp)
         .build
-      fiber <- resource.use(server =>
-        IO.delay(log.info("Server started at {}", server.address)) >> IO.never.as(ExitCode.Success)
-      )
-    } yield fiber
+
+    } yield resource
+    resource.use(server => IO.delay(log.info("Server started at {}", server.address)) >> IO.never.as(ExitCode.Success))
   }
 
 }

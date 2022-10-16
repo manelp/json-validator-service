@@ -1,4 +1,4 @@
-package com.perezbondia.jsonvalidator.infra
+package com.perezbondia.jsonvalidator.infra.db
 
 import com.typesafe.config.ConfigFactory
 import com.perezbondia.jsonvalidator.config._
@@ -65,7 +65,6 @@ final class FlywayDatabaseMigratorTest extends CatsEffectSuite {
   }
 
   override def munitFixtures = List(db)
-
 
   override def beforeEach(context: BeforeEach): Unit = {
     val flyway: Flyway =
