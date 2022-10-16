@@ -24,5 +24,8 @@ package com.perezbondia.jsonvalidator.test
 import cats.effect.IO
 
 object TestHelpers {
-  def unsafeGet[A](option: Option[A]): IO[A] = IO(option.get)
+ 
+  extension [A](self: Option[A]) {
+    def getOrThrow: IO[A] = IO.fromOption(self)(throw Error("Option was None"))
+  }
 }

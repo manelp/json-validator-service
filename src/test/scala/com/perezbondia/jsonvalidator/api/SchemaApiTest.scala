@@ -30,7 +30,7 @@ import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.server.Router
 import com.perezbondia.jsonvalidator.core.SchemaService
-import com.perezbondia.jsonvalidator.test.TestHelpers
+import com.perezbondia.jsonvalidator.test.TestHelpers._
 import com.perezbondia.jsonvalidator.api.model._
 
 class SchemaApiTest extends CatsEffectSuite {
@@ -42,7 +42,7 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
 
     val response = for {
-      uri <- TestHelpers.unsafeGet(Uri.fromString("/schema/schemaId").toOption)
+      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
       schemaService           = new SchemaService[IO]()
       service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
       request = Request[IO](
@@ -66,7 +66,7 @@ class SchemaApiTest extends CatsEffectSuite {
     val expectedResponse = ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
 
     val response = for {
-      uri <- TestHelpers.unsafeGet(Uri.fromString("/schema/schemaId").toOption)
+      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
       schemaService           = new SchemaService[IO]()
       service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
       request = Request[IO](
