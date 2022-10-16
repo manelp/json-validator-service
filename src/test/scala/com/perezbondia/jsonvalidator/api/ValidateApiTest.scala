@@ -36,6 +36,7 @@ import org.typelevel.ci.CIString.apply
 
 import com.perezbondia.jsonvalidator.api.model._
 import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.ValidateService
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 import com.perezbondia.jsonvalidator.infra.FakeSchemaRepo
 import com.perezbondia.jsonvalidator.test.TestHelpers._
@@ -44,11 +45,33 @@ import com.perezbondia.jsonvalidator.types._
 class ValidateApiTest extends CatsEffectSuite {
 
   given EntityDecoder[IO, BadRequestResponse] = jsonOf
+  given EntityDecoder[IO, NotFoundResponse]   = jsonOf
   given EntityDecoder[IO, SuccessResponse]    = jsonOf
 
-  test("GET /validate/schemaId returns bad request") {
-    val expectedStatusCode  = Status.BadRequest
-    val expectedResponse    = ErrorResponse.badRequest(Action.validateDocument, "not implemented yet")
+  test("POST /validate/schemaId returns not found request") {
+    val expectedStatusCode  = Status.NotFound
+    val expectedResponse    = ErrorResponse.notFound(Action.validateDocument, SchemaId("schemaId"))
+    val expectedContentType = "application/json"
+
+    val response = testResources().use { service =>
+      for {
+        uri <- Uri.fromString("/validate/schemaId").toOption.getOrThrow
+        request = Request[IO](method = Method.POST, uri = uri).withEntity("{}")
+        response <- service.orNotFound.run(request)
+      } yield response
+    }
+
+    val test = for {
+      result      <- response
+      body        <- result.as[NotFoundResponse]
+      contentType <- result.headers.get(CIString("content-type")).getOrThrow
+    } yield (result.status, body, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
+  }
+  test("POST /validate/schemaId with empty body") {
+    val expectedStatusCode = Status.BadRequest
+    val expectedResponse =
+      ErrorResponse.badRequest(Action.validateDocument, "Invalid JSON. ParsingFailure: exhausted input")
     val expectedContentType = "application/json"
 
     val response = testResources().use { service =>
@@ -65,14 +88,14 @@ class ValidateApiTest extends CatsEffectSuite {
       contentType <- result.headers.get(CIString("content-type")).getOrThrow
     } yield (result.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
-
   }
 
   def testResources(): Resource[IO, HttpRoutes[IO]] =
     for {
-      // ref <- Ref[IO].of(Map.empty[SchemaId, Json])
-      // repo                    = new FakeSchemaRepo(ref)
-      // schemaService           = new SchemaService[IO](repo)
-      service: HttpRoutes[IO] <- Resource.eval(IO(Router("/" -> new ValidateApi[IO]().routes)))
+      ref <- Resource.eval(Ref[IO].of(Map.empty[SchemaId, Json]))
+      repo                    = new FakeSchemaRepo(ref)
+      schemaService           = new SchemaService[IO](repo)
+      validateService         = new ValidateService[IO]()
+      service: HttpRoutes[IO] = Router("/" -> new ValidateApi[IO](schemaService, validateService).routes)
     } yield service
 }

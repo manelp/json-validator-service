@@ -24,6 +24,8 @@ package com.perezbondia.jsonvalidator.api
 import io.circe._
 import io.circe.generic.semiauto._
 
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+
 object model {
 
   enum Action {
@@ -59,8 +61,8 @@ object model {
   final case class NotFoundResponse(id: ResourceId, action: Action, status: ResponseStatus, message: String)
       extends ErrorResponse
   object ErrorResponse {
-    def notFound(action: Action, message: String): NotFoundResponse =
-      new NotFoundResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
+    def notFound(action: Action, schemaId: SchemaId): NotFoundResponse =
+      new NotFoundResponse(ResourceId.`config-schema`, action, ResponseStatus.error, s"schema $schemaId not found")
     def badRequest(action: Action, message: String): BadRequestResponse =
       new BadRequestResponse(ResourceId.`config-schema`, action, ResponseStatus.error, message)
   }

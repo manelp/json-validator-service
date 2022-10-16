@@ -60,7 +60,7 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.retrieveSchemaEndpoint.serverLogic { schemaId =>
       schemaService.retrieveSchema(schemaId).map {
         case Some(json) => Right(json.noSpaces)
-        case None       => ErrorResponse.notFound(Action.downloadSchema, s"schema $schemaId not found").asLeft[String]
+        case None       => ErrorResponse.notFound(Action.downloadSchema, schemaId).asLeft[String]
       }
     })
 
@@ -71,25 +71,25 @@ object SchemaApi {
 
   given PlainCodec[SchemaId] = Codec.string.mapDecode(x => DecodeResult.Value(SchemaId(x)))(_.toString)
 
-  private val baseEndpoint: Endpoint[Unit, SchemaId, Unit, Unit, Any] = endpoint
+  private val baseEndpoint: PublicEndpoint[SchemaId, Unit, Unit, Any] = endpoint
     .in("schema")
     .in(path[SchemaId]("schemaId"))
     .errorOut(header(Header.contentType(MediaType.ApplicationJson)))
     .out(header(Header.contentType(MediaType.ApplicationJson)))
 
-  val postSchemaEndpoint: Endpoint[Unit, (SchemaId, String), BadRequestResponse | Unit, SuccessResponse, Any] =
+  val postSchemaEndpoint: PublicEndpoint[(SchemaId, String), BadRequestResponse, SuccessResponse, Any] =
     baseEndpoint.post
       .in(stringJsonBody)
       .out(jsonBody[SuccessResponse])
-      .errorOutVariant(oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestResponse].description("invalid request")))
+      .errorOut(statusCode(StatusCode.BadRequest).and(jsonBody[BadRequestResponse].description("invalid request")))
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
 
-  val retrieveSchemaEndpoint: Endpoint[Unit, SchemaId, NotFoundResponse | Unit, String, Any] =
+  val retrieveSchemaEndpoint: PublicEndpoint[SchemaId, NotFoundResponse, String, Any] =
     baseEndpoint.get
       .out(stringJsonBody)
-      .errorOutVariant(oneOfVariant(StatusCode.NotFound, jsonBody[NotFoundResponse].description("not found")))
+      .errorOut(statusCode(StatusCode.NotFound).and(jsonBody[NotFoundResponse].description("not found")))
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )

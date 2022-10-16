@@ -36,9 +36,11 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.SwaggerUI
 
 import com.perezbondia.jsonvalidator.api.SchemaApi
+import com.perezbondia.jsonvalidator.api.ValidateApi
 import com.perezbondia.jsonvalidator.api._
 import com.perezbondia.jsonvalidator.config._
 import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.ValidateService
 import com.perezbondia.jsonvalidator.infra.PostgresSchemaRepo
 import com.perezbondia.jsonvalidator.infra.db.FlywayDatabaseMigrator
 import com.perezbondia.jsonvalidator.infra.db.TransactorResource
@@ -60,13 +62,15 @@ object Server extends IOApp {
         IO(ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY.toString).loadOrThrow[ServiceConfig])
       )
       transactor <- TransactorResource.resource(dbConfig)
-      schemaRepo    = new PostgresSchemaRepo[IO](transactor)
-      schemaService = new SchemaService[IO](schemaRepo)
-      schemaApi     = new SchemaApi[IO](schemaService)
-      docs          = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
-      swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
-      routes        = schemaApi.routes <+> swaggerRoutes
-      httpApp       = Router("/" -> routes).orNotFound
+      schemaRepo      = new PostgresSchemaRepo[IO](transactor)
+      schemaService   = new SchemaService[IO](schemaRepo)
+      schemaApi       = new SchemaApi[IO](schemaService)
+      validateService = new ValidateService[IO]()
+      validatApi      = new ValidateApi[IO](schemaService, validateService)
+      docs            = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
+      swaggerRoutes   = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
+      routes          = schemaApi.routes <+> validatApi.routes <+> swaggerRoutes
+      httpApp         = Router("/" -> routes).orNotFound
       resource <- EmberServerBuilder
         .default[IO]
         .withHost(serviceConfig.host)

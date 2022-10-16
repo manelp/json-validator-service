@@ -44,7 +44,6 @@ final class ValidateService[F[_]: Sync]() {
       jsonDocument    <- Sync[F].delay(JsonLoader.fromString(document.value.deepDropNullValues.noSpaces))
       schema          <- Sync[F].delay(JsonSchemaFactory.byDefault().getJsonSchema(schemaValidator))
       validationRes   <- Sync[F].delay(schema.validate(jsonDocument))
-      _               <- Sync[F].delay(println(validationRes))
       res =
         if (validationRes.isSuccess()) Right(())
         else
@@ -58,7 +57,6 @@ final class ValidateService[F[_]: Sync]() {
                 .mkString(" | ")
             )
           )
-      _ <- Sync[F].delay(println(res))
     } yield res
 
 }
