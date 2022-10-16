@@ -49,15 +49,22 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
       }
     })
 
-  private val getSchema: HttpRoutes[F] =
-    Http4sServerInterpreter[F]().toRoutes(SchemaApi.getSchemaEndpoint.serverLogic { _ =>
-      Sync[F].delay(
-        ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
-          .asLeft[String]
-      )
+  private val retrieveSchema: HttpRoutes[F] =
+    Http4sServerInterpreter[F]().toRoutes(SchemaApi.retrieveSchemaEndpoint.serverLogic { schemaId =>
+      schemaService.retrieveSchema(schemaId).map {
+        case Some(json) => Right(json.noSpaces)
+        case None =>
+          ErrorResponse(
+            Action.DownloadSchema,
+            ResourceId.ConfigSchema,
+            ResponseStatus.Error,
+            s"schema $schemaId not found"
+          )
+            .asLeft[String]
+      }
     })
 
-  val routes: HttpRoutes[F] = postSchema <+> getSchema
+  val routes: HttpRoutes[F] = postSchema <+> retrieveSchema
 }
 
 object SchemaApi {
@@ -73,18 +80,18 @@ object SchemaApi {
 
   val postSchemaEndpoint: Endpoint[Unit, (SchemaId, String), ErrorResponse, SuccessResponse, Any] =
     baseEndpoint.post
-      .in(stringBody)
+      .in(stringJsonBody)
       .out(jsonBody[SuccessResponse])
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
 
-  val getSchemaEndpoint: Endpoint[Unit, SchemaId, ErrorResponse, String, Any] =
+  val retrieveSchemaEndpoint: Endpoint[Unit, SchemaId, ErrorResponse, String, Any] =
     baseEndpoint.get
       .out(stringJsonBody)
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
 
-  val endpoints = List(postSchemaEndpoint, getSchemaEndpoint)
+  val endpoints = List(postSchemaEndpoint, retrieveSchemaEndpoint)
 }

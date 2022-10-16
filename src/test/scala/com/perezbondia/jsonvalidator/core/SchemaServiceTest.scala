@@ -31,34 +31,40 @@ import munit.CatsEffectSuite
 
 import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaIdInUse
 import com.perezbondia.jsonvalidator.infra.FakeSchemaRepo
 
 class SchemaServiceTest extends CatsEffectSuite {
 
-  val resourcesFixture = ResourceSuiteLocalFixture(
-    "testResources",
+  def testResource(initialValues: Map[SchemaId, Json]): Resource[IO, SchemaService[cats.effect.IO]] =
     for {
-      ref <- Resource.eval(Ref[IO].of(Map.empty[SchemaId, Json]))
+      ref <- Resource.eval(Ref[IO].of(initialValues))
       repo = new FakeSchemaRepo(ref)
     } yield new SchemaService[IO](repo)
-  )
-
-  override def munitFixtures = List(resourcesFixture)
 
   test("registerSchema valid json") {
-    val test = for {
-      service <- IO(resourcesFixture())
-      res     <- service.registerSchema(SchemaId("schemaId"), "{}")
-    } yield res
+    val test = testResource(Map.empty).use(service => service.registerSchema(SchemaId("schemaId"), "{}"))
 
     test.assertEquals(Right(()))
   }
-  test("registerSchema invalid json") {
-    val test = for {
-      service <- IO(resourcesFixture())
-      res     <- service.registerSchema(SchemaId("schemaId"), "{invalid}")
-    } yield res
+
+  test("registerSchema invalid json returns InvalidJson") {
+    val test = testResource(Map.empty).use(service => service.registerSchema(SchemaId("schemaId"), "{invalid}"))
 
     test.assertEquals(Left(InvalidJson("ParsingFailure: expected \" got 'invali...' (line 1, column 2)")))
+  }
+
+  test("register existing schema returns SchemaIdInUse") {
+    val schemaId = SchemaId("schemaId")
+    val test     = testResource(Map(schemaId -> Json.obj())).use(service => service.registerSchema(schemaId, "{}"))
+
+    test.assertEquals(Left(SchemaIdInUse(schemaId)))
+  }
+
+  test("retrieve existing schema") {
+    val schemaId = SchemaId("schemaId")
+    val test     = testResource(Map(schemaId -> Json.obj())).use(service => service.retrieveSchema(schemaId))
+
+    test.assertEquals(Some(Json.obj()))
   }
 }

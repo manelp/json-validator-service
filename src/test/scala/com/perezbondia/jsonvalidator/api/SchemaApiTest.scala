@@ -86,7 +86,7 @@ class SchemaApiTest extends CatsEffectSuite {
   test("GET /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
-      ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+      ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "schema schemaId not found")
     val expectedContentType = "application/json"
 
     val response = for {

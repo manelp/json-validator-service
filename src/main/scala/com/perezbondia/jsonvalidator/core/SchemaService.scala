@@ -48,7 +48,7 @@ final class SchemaService[F[_]: Sync](schemaRepo: SchemaRepo[F]) {
       }
     } yield res
 
-  def getSchema(schemaId: SchemaId): F[Unit] = ???
+  def retrieveSchema(schemaId: SchemaId): F[Option[Json]] = schemaRepo.retrieveSchema(schemaId)
 
   private[core] def validateJsonSchema(inputSchema: String): F[Either[InvalidJson, Json]] =
     Sync[F].delay(parse(inputSchema).left.map(r => InvalidJson(r.show)))
