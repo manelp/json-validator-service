@@ -29,4 +29,6 @@ object model {
     def apply(id: String): SchemaId = id
   }
 
+  final case class InvalidJson(message: String) extends Exception
+
 }

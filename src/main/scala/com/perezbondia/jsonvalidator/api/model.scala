@@ -41,7 +41,10 @@ object model {
     case Error   extends ResponseStatus("error")
   }
 
+  final case class SuccessResponse(action: Action, id: ResourceId, status: ResponseStatus)
   final case class ErrorResponse(action: Action, id: ResourceId, status: ResponseStatus, message: String)
+
+  // Codecs
 
   // TODO: Use a generic solution for scala3 enum
   given Codec[Action] =
@@ -54,6 +57,7 @@ object model {
       (a: ResponseStatus) => Encoder.encodeString(a.toString)
     )
 
-  given Codec[ErrorResponse] = deriveCodec[ErrorResponse]
+  given Codec[ErrorResponse]   = deriveCodec[ErrorResponse]
+  given Codec[SuccessResponse] = deriveCodec[SuccessResponse]
 
 }

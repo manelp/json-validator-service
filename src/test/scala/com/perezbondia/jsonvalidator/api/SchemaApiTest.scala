@@ -34,41 +34,57 @@ import com.perezbondia.jsonvalidator.test.TestHelpers._
 import com.perezbondia.jsonvalidator.api.model._
 import org.typelevel.ci.CIString.apply
 import org.typelevel.ci.CIString
+import io.circe._
+import io.circe.literal._
 
 class SchemaApiTest extends CatsEffectSuite {
 
-  given EntityDecoder[IO, ErrorResponse] = jsonOf
+  given EntityDecoder[IO, ErrorResponse]   = jsonOf
+  given EntityDecoder[IO, SuccessResponse] = jsonOf
 
-  test("POST /schema/schemaId returns bad request") {
-    val expectedStatusCode = Status.BadRequest
-    val expectedResponse =
-      ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+  test("POST /schema/schemaId returns success on valid json") {
+    val expectedStatusCode  = Status.Ok
+    val expectedResponse    = SuccessResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Success)
     val expectedContentType = "application/json"
 
-    val response = for {
+    val test = for {
       uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
       schemaService           = new SchemaService[IO]()
       service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
-      request = Request[IO](
-        method = Method.POST,
-        uri = uri
-      )
-      response <- service.orNotFound.run(request)
-    } yield response
+      request                 = Request[IO](method = Method.POST, uri = uri).withEntity(json"""{}""")
+      response    <- service.orNotFound.run(request)
+      body        <- response.as[SuccessResponse]
+      contentType <- response.headers.get(CIString("content-type")).getOrThrow
+    } yield (response.status, body, contentType.head.value)
+    test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
+  }
+
+  test("POST /schema/schemaId returns error on invalid json") {
+    val expectedStatusCode = Status.BadRequest
+    val expectedResponse = ErrorResponse(
+      Action.UploadSchema,
+      ResourceId.ConfigSchema,
+      ResponseStatus.Error,
+      "ParsingFailure: expected \" got 'invali...' (line 1, column 13)"
+    )
+    val expectedContentType = "application/json"
 
     val test = for {
-      result      <- response
-      body        <- result.as[ErrorResponse]
-      contentType <- result.headers.get(CIString("content-type")).getOrThrow
-    } yield (result.status, body, contentType.head.value)
+      uri <- Uri.fromString("/schema/schemaId").toOption.getOrThrow
+      schemaService           = new SchemaService[IO]()
+      service: HttpRoutes[IO] = Router("/" -> new SchemaApi[IO](schemaService).routes)
+      request                 = Request[IO](method = Method.POST, uri = uri).withEntity("""{"valid":1, invalid: 2}""")
+      response    <- service.orNotFound.run(request)
+      body        <- response.as[ErrorResponse]
+      contentType <- response.headers.get(CIString("content-type")).getOrThrow
+    } yield (response.status, body, contentType.head.value)
     test.assertEquals((expectedStatusCode, expectedResponse, expectedContentType))
-
   }
 
   test("GET /schema/schemaId returns bad request") {
     val expectedStatusCode = Status.BadRequest
     val expectedResponse =
-      ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+      ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
     val expectedContentType = "application/json"
 
     val response = for {

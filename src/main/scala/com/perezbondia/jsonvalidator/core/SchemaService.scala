@@ -22,8 +22,19 @@
 package com.perezbondia.jsonvalidator.core
 
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
+import com.perezbondia.jsonvalidator.core.domain.model.InvalidJson
+import io.circe._
+import io.circe.parser._
+import cats.effect.Sync
+import cats.implicits._
 
-final class SchemaService[F[_]]() {
-  def registerSchema(schemaId: SchemaId): F[Unit] = ???
-  def getSchema(schemaId: SchemaId): F[Unit]      = ???
+final class SchemaService[F[_]: Sync]() {
+  def registerSchema(schemaId: SchemaId, inputSchema: String): F[Either[InvalidJson, Unit]] =
+    // TODO: We can validate after checking that schemaId doesn't exists
+    validateJsonSchema(inputSchema).map(_.map(_ => ()))
+
+  def getSchema(schemaId: SchemaId): F[Unit] = ???
+
+  private[core] def validateJsonSchema(inputSchema: String): F[Either[InvalidJson, Json]] =
+    Sync[F].delay(parse(inputSchema).left.map(r => InvalidJson(r.show)))
 }

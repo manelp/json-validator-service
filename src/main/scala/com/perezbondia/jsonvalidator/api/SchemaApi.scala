@@ -25,30 +25,32 @@ import org.http4s.HttpRoutes
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import cats.effect.kernel.Async
 import com.perezbondia.jsonvalidator.core.SchemaService
+import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
 import com.perezbondia.jsonvalidator.api.model._
 import sttp.model.StatusCode
 import cats.effect.kernel.Sync
 import sttp.model._
 import sttp.tapir._
 import cats.implicits._
-import sttp.tapir.CodecFormat.TextPlain
+import sttp.tapir.Codec.PlainCodec
 import sttp.tapir.generic.auto._
 import sttp.tapir.json.circe._
 import io.circe.Json
 
 final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
   private val postSchema: HttpRoutes[F] =
-    Http4sServerInterpreter[F]().toRoutes(SchemaApi.postSchemaEndpoint.serverLogic { _ =>
-      Sync[F].delay(
-        ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
-          .asLeft[Unit]
-      )
+    Http4sServerInterpreter[F]().toRoutes(SchemaApi.postSchemaEndpoint.serverLogic { (schemaId, jsonSchema) =>
+      schemaService.registerSchema(schemaId, jsonSchema).map {
+        case Right(_) => Right(SuccessResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Success))
+        case Left(error) =>
+          Left(ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, error.message))
+      }
     })
 
   private val getSchema: HttpRoutes[F] =
     Http4sServerInterpreter[F]().toRoutes(SchemaApi.getSchemaEndpoint.serverLogic { _ =>
       Sync[F].delay(
-        ErrorResponse(Action.UploadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
+        ErrorResponse(Action.DownloadSchema, ResourceId.ConfigSchema, ResponseStatus.Error, "not implemented")
           .asLeft[String]
       )
     })
@@ -58,22 +60,25 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
 
 object SchemaApi {
 
-  private val baseEndpoint: Endpoint[Unit, String, ErrorResponse, Unit, Any] = endpoint
+  given PlainCodec[SchemaId] = Codec.string.mapDecode(x => DecodeResult.Value(SchemaId(x)))(_.toString)
+
+  private val baseEndpoint: Endpoint[Unit, SchemaId, ErrorResponse, Unit, Any] = endpoint
     .in("schema")
-    .in(path[String]("schemaId"))
+    .in(path[SchemaId]("schemaId"))
     .errorOut(jsonBody[ErrorResponse])
     .errorOut(header(Header.contentType(MediaType.ApplicationJson)))
     .out(header(Header.contentType(MediaType.ApplicationJson)))
 
-  val postSchemaEndpoint: Endpoint[Unit, (String, String), ErrorResponse, Unit, Any] =
-    baseEndpoint
+  val postSchemaEndpoint: Endpoint[Unit, (SchemaId, String), ErrorResponse, SuccessResponse, Any] =
+    baseEndpoint.post
       .in(stringBody)
+      .out(jsonBody[SuccessResponse])
       .description(
         "Registers a new JSON schema with the given :schemaId"
       )
 
-  val getSchemaEndpoint: Endpoint[Unit, String, ErrorResponse, String, Any] =
-    baseEndpoint
+  val getSchemaEndpoint: Endpoint[Unit, SchemaId, ErrorResponse, String, Any] =
+    baseEndpoint.get
       .out(stringJsonBody)
       .description(
         "Registers a new JSON schema with the given :schemaId"
