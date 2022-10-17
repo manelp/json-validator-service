@@ -46,7 +46,8 @@ final class SchemaApi[F[_]: Async](schemaService: SchemaService[F]) {
       for {
         parsedJson <- JsonParser.validateJsonSchema(jsonSchema)
         res <- parsedJson match {
-          case Left(error) => Async[F].pure(Left(ErrorResponse.badRequest(schemaId, Action.uploadSchema, error.message)))
+          case Left(error) =>
+            Async[F].pure(Left(ErrorResponse.badRequest(schemaId, Action.uploadSchema, error.message)))
           case Right(validJson) =>
             schemaService.registerSchema(schemaId, validJson).map {
               case Right(_)    => Right(SuccessResponse(schemaId, Action.uploadSchema))

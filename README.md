@@ -73,7 +73,11 @@ curl http://localhost:8081/validate/config-schema -X POST -d @./examples/valid-d
 curl http://localhost:8081/validate/config-schema -X POST -d @./examples/invalid-document.json
 ```
 
+### Open API
 
+There's also swagger running on:
+
+http://localhost:8081/docs
 
 
 

@@ -54,7 +54,8 @@ final class ValidateApi[F[_]: Async](schemaService: SchemaService[F], validateSe
         schema     <- schemaService.retrieveSchema(schemaId)
         parsedJson <- JsonParser.validateJsonSchema(json)
         res <- parsedJson match {
-          case Left(error) => Async[F].pure(Left(ErrorResponse.badRequest(schemaId, Action.validateDocument, error.message)))
+          case Left(error) =>
+            Async[F].pure(Left(ErrorResponse.badRequest(schemaId, Action.validateDocument, error.message)))
           case Right(jsonDocument) =>
             schema.fold(
               Async[F].pure(Left(ErrorResponse.notFound(schemaId, Action.validateDocument)))

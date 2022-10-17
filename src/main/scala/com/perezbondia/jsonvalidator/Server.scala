@@ -67,10 +67,14 @@ object Server extends IOApp {
       schemaApi       = new SchemaApi[IO](schemaService)
       validateService = new ValidateService[IO]()
       validatApi      = new ValidateApi[IO](schemaService, validateService)
-      docs            = OpenAPIDocsInterpreter().toOpenAPI(SchemaApi.endpoints, "Json validator service", "0.0.1")
-      swaggerRoutes   = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
-      routes          = schemaApi.routes <+> validatApi.routes <+> swaggerRoutes
-      httpApp         = Router("/" -> routes).orNotFound
+      docs = OpenAPIDocsInterpreter().toOpenAPI(
+        SchemaApi.endpoints ++ ValidateApi.endpoints,
+        "Json validator service",
+        "0.0.1"
+      )
+      swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(SwaggerUI[IO](docs.toYaml))
+      routes        = schemaApi.routes <+> validatApi.routes <+> swaggerRoutes
+      httpApp       = Router("/" -> routes).orNotFound
       resource <- EmberServerBuilder
         .default[IO]
         .withHost(serviceConfig.host)

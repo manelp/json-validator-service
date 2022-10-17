@@ -23,9 +23,9 @@ package com.perezbondia.jsonvalidator.api
 
 import io.circe._
 import io.circe.generic.semiauto._
+import sttp.tapir.Schema
 
 import com.perezbondia.jsonvalidator.core.domain.model.SchemaId
-import sttp.tapir.Schema
 
 object model {
 
@@ -49,8 +49,7 @@ object model {
 
   final case class SuccessResponse(id: SchemaId, action: Action, status: ResponseStatus) extends ApiResponse
   object SuccessResponse {
-    def apply(id: SchemaId, action: Action): SuccessResponse =
-      new SuccessResponse(id, action, ResponseStatus.success)
+    def apply(id: SchemaId, action: Action): SuccessResponse = new SuccessResponse(id, action, ResponseStatus.success)
   }
 
   sealed trait ErrorResponse extends ApiResponse
