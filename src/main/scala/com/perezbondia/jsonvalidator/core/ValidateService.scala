@@ -24,7 +24,7 @@ package com.perezbondia.jsonvalidator.core
 import cats.effect.kernel.Sync
 import cats.implicits._
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import com.github.fge.jackson.JsonLoader
 import com.github.fge.jsonschema.core.report.LogLevel
 import com.github.fge.jsonschema.core.report.ProcessingReport

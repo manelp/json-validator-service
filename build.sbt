@@ -4,7 +4,7 @@
 
 inThisBuild(
   Seq(
-    scalaVersion := "3.2.0",
+    scalaVersion := "3.4.1",
     organization := "com.perezbondia",
     organizationName := "Manel Perez",
     startYear := Some(2022),
